@@ -47,9 +47,12 @@ export function shortLabel(p: Property): string {
   return (unit ? `${parts[0]}, ${parts[1]}` : parts[0]) || p.id;
 }
 
-function ownsEach(from: string, props: StructNode[]): StructEdge[] {
-  return props.map((p) => ({ from, to: p.id, pct: 100 }));
+function ownsEach(from: string, props: StructNode[], pct = 100): StructEdge[] {
+  return props.map((p) => ({ from, to: p.id, pct }));
 }
+
+/** A lone investor's own share (as C and D use it); 100 for the generic buyer. */
+const soloPct = (investors: Investor[]) => (investors.length === 1 ? investors[0].pct : 100);
 
 const BUYER: StructNode = { id: "buyer", kind: "investor", label: "Buyer", jurisdiction: "UK", investor_type: "uk_company" };
 const SPV: StructNode = { id: "spv", kind: "company", label: "PropCo Ltd", jurisdiction: "UK" };
@@ -79,14 +82,14 @@ export function buildA(packet: Packet, investors: Investor[] = []): Structure {
     };
   }
   const buyer = buyerFor(investors);
-  return { option: "A", name: OPTION_NAMES.A, rationale: "", nodes: [buyer, ...props], edges: ownsEach(buyer.id, props) };
+  return { option: "A", name: OPTION_NAMES.A, rationale: "", nodes: [buyer, ...props], edges: ownsEach(buyer.id, props, soloPct(investors)) };
 }
 
 /** B: one investor (or none) owns PropCo as "buyer"; 2+ investors each own their pct of PropCo. */
 export function buildB(packet: Packet, investors: Investor[] = []): Structure {
   const props = propertyNodes(packet);
   const owners = investors.length >= 2 ? investors.map(investorNode) : [buyerFor(investors)];
-  const pcts = investors.length >= 2 ? investors.map((i) => i.pct) : [100];
+  const pcts = investors.length >= 2 ? investors.map((i) => i.pct) : [soloPct(investors)];
   return {
     option: "B",
     name: OPTION_NAMES.B,

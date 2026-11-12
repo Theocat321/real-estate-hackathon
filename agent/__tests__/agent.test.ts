@@ -82,6 +82,13 @@ describe("structures (templates, not LLM)", () => {
     expect(shape(buildA(samplePacket(), [])).edges).toEqual(["buyer>p1:100", "buyer>p2:100"]);
   });
 
+  it("a single investor uses its own share on edges in A and B, as in C and D", () => {
+    const solo: Investor[] = [{ type: "uk_pension", label: "Pension", pct: 60 }];
+    expect(shape(buildA(samplePacket(), solo)).edges).toEqual(["buyer>p1:60", "buyer>p2:60"]);
+    expect(shape(buildB(samplePacket(), solo)).edges).toEqual(["buyer>spv:60", "spv>p1:100", "spv>p2:100"]);
+    expect(shape(buildB(samplePacket(), [])).edges).toEqual(["buyer>spv:100", "spv>p1:100", "spv>p2:100"]);
+  });
+
   it("D: family settles the trust, trust holds the family's share, others hold theirs", () => {
     const d = buildD(samplePacket(), [{ type: "family_office_uk", label: "FO", pct: 70 }, { type: "uk_pension", label: "Pension", pct: 30 }]);
     expect(shape(d).edges).toEqual(["settlor>trust:100", "trust>spv:70", "inv1>spv:30", "spv>p1:100", "spv>p2:100"]);
