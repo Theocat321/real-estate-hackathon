@@ -40,7 +40,10 @@ function propertyNodes(packet: Packet): StructNode[] {
 
 /** "Wireless House, Westfield Industrial Estate, ..." -> "Wireless House" */
 export function shortLabel(p: Property): string {
-  return p.address.split(",")[0]?.trim() || p.id;
+  const parts = p.address.split(",").map((s) => s.trim()).filter(Boolean);
+  // "Flat A, 26 King Edward's Road, ..." -> "Flat A, 26 King Edward's Road"
+  const unit = /^(flat|apartment|unit|lot|suite|plot|room)\b/i.test(parts[0] ?? "") && parts[1];
+  return (unit ? `${parts[0]}, ${parts[1]}` : parts[0]) || p.id;
 }
 
 function ownsEach(from: string, props: StructNode[]): StructEdge[] {

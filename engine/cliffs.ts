@@ -9,7 +9,7 @@
  *  - two_nil_rate_bands: option D using two settlors' nil-rate bands instead of one
  */
 import type { CostRow, EngineResult, OptionId, Property, RuleRef, ScenarioInput, Stage, Structure } from "@/contracts";
-import { NONRES_DWELLING_THRESHOLD, findBuyer, runEngine } from "./index";
+import { NONRES_DWELLING_THRESHOLD, findBuyer, runEngine, shortName } from "./index";
 import { fmt } from "./money";
 import { ATED_BANDS_2026_27, ATED_RULE, ATED_THRESHOLD } from "./rules/ated";
 import { DEFAULT_SETTLOR_NRB } from "./rules/iht_base";
@@ -49,7 +49,7 @@ export interface Cliff {
 }
 
 const sumStage = (r: EngineResult, o: OptionId, s: Stage) => r.totals[o]?.[s] ?? 0;
-const short = (p: Property) => p.address.split(",")[0]?.trim() || p.id;
+const short = shortName;
 
 function diff(base: EngineResult, probe: EngineResult): Partial<Record<OptionId, StageSaving>> {
   const out: Partial<Record<OptionId, StageSaving>> = {};

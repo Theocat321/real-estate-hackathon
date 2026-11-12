@@ -34,7 +34,12 @@ const OPTIONS: OptionId[] = ["A", "B", "C", "D"];
 type Input = CostRow["inputs"][number];
 type Priced = Property & { price: number; priceSource: SourceRef; name: string };
 
-const shortName = (p: Property) => p.address.split(",")[0]?.trim() || p.id;
+export const shortName = (p: Property): string => {
+  const parts = p.address.split(",").map((s) => s.trim()).filter(Boolean);
+  // "Flat A, 26 King Edward's Road, ..." -> "Flat A, 26 King Edward's Road"
+  const unit = /^(flat|apartment|unit|lot|suite|plot|room)\b/i.test(parts[0] ?? "") && parts[1];
+  return (unit ? `${parts[0]}, ${parts[1]}` : parts[0]) || p.id;
+};
 const dwellingsOf = (p: Property) => Math.max(1, p.dwellings);
 const priceInput = (p: Priced): Input => ({ label: `${p.name} price`, value: p.price, source: p.priceSource });
 const ruleSource = (rule: RuleRef, excerpt: string): SourceRef => ({ kind: "rule", file: `engine/rules/${rule.id}.ts`, url: rule.citation_url, excerpt });
