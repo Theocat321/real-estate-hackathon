@@ -22,6 +22,7 @@ import type {
   Structure,
   StructuresResponse,
 } from "@/contracts";
+import type { Cliff } from "@/engine/cliffs";
 import sample from "@/fixtures/sample.json";
 import demoResidential from "@/fixtures/demo-residential.json";
 
@@ -135,6 +136,11 @@ export async function runScenario(input: ScenarioInput): Promise<EngineResult> {
     return runEngine(input);
   }
   return postJson<EngineResult>("/api/engine", input);
+}
+
+/** POST /api/cliffs: thresholds near this scenario, each priced by re-running the engine. */
+export async function findCliffs(input: ScenarioInput): Promise<Cliff[]> {
+  return (await postJson<{ cliffs: Cliff[] }>("/api/cliffs", input)).cliffs;
 }
 
 /** POST /api/extract (multipart: file) */

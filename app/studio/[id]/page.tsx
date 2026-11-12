@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { EngineResult, Investor, OptionId, Packet, Structure } from "@/contracts";
 import { Notice } from "@/components/ui";
+import { CliffPanel } from "@/components/CliffPanel";
+import type { Cliff } from "@/engine/cliffs";
 import { CostMoney } from "@/components/SourceDrawer";
 import { StructureChart } from "@/components/StructureChart";
 import { FlagList, OptionDTimeline, TotalsChart, TotalsTable } from "@/components/StudioPanels";
@@ -12,6 +14,7 @@ import {
   INVESTOR_PRESETS,
   OPTIONS,
   buildStructures,
+  findCliffs,
   exportPdf,
   gbp,
   loadPacket,
@@ -28,6 +31,7 @@ export default function StudioPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [cliffs, setCliffs] = useState<Cliff[] | null>(null);
   const [changeNote, setChangeNote] = useState<string | null>(null);
   const prev = useRef<{ preset: InvestorPreset; structures: Structure[]; result: EngineResult } | null>(null);
 
@@ -42,7 +46,10 @@ export default function StudioPage() {
     setError(null);
     try {
       const { structures } = await buildStructures(p, investors);
-      const result = await runScenario({ packet: p, structures, investors });
+      const scenario = { packet: p, structures, investors };
+      const result = await runScenario(scenario);
+      setCliffs(null);
+      findCliffs(scenario).then(setCliffs).catch(() => setCliffs([]));
       setStructures(structures);
       setResult(result);
       setChangeNote(prev.current && prev.current.preset !== presetRef.current ? describeChange(prev.current, { structures, result }, investors[0]?.label ?? "these investors") : null);
@@ -187,6 +194,7 @@ export default function StudioPage() {
             <div className="mt-3">{result && <TotalsTable result={result} best={tied.length === 1 ? best : null} />}</div>
             <p className="mt-2 text-[11px] text-faint">*Inheritance tax if the family held the lots personally. Shown for comparison with D.</p>
           </section>
+          <CliffPanel cliffs={cliffs} loading={loading || (!!result && !cliffs)} />
           {result && (
             <section className="rounded-md bg-ink p-4 text-sheet [&_button]:border-sheet/30 [&_button:hover]:bg-sheet/10 [&_button:hover]:text-sheet">
               <h2 className="mb-2 text-[12px] font-medium opacity-70">Option D, family trust</h2>

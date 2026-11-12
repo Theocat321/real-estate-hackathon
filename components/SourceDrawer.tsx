@@ -201,11 +201,13 @@ export function SourcedMoney({ title, sourced, format = "gbp", className = "" }:
 }
 
 /** A £ produced by one or more engine CostRows. */
-export function CostMoney({ title, rows, amount, note, className = "" }: {
+export function CostMoney({ title, rows, amount, note, display, className = "" }: {
   title: string;
   rows: CostRow[];
   amount?: number;
   note?: string;
+  /** Button text override; the drawer still explains `rows`. */
+  display?: string;
   className?: string;
 }) {
   const open = useSourceDrawer();
@@ -217,7 +219,7 @@ export function CostMoney({ title, rows, amount, note, className = "" }: {
       className={`${moneyCls} ${className}`}
       onClick={() => open(rows.length === 1 && amount == null ? { kind: "cost", title, row: rows[0] } : { kind: "sum", title, amount: total, rows, note })}
     >
-      {gbp(total)}
+      {display ?? gbp(total)}
     </button>
   );
 }
