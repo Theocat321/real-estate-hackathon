@@ -313,7 +313,7 @@ export default function StudioPage() {
         className={`mt-3 overflow-hidden rounded-md border border-rule bg-sheet transition-opacity ${loading ? "opacity-50" : ""}`}
         aria-busy={loading}
       >
-        <div className="h-[max(340px,calc(100vh-25rem))]">{s && result ? <StructureChart structure={s} rows={result.rows} large /> : <div className="survey-grid h-full" />}</div>
+        <div className="h-[max(340px,calc(100vh-25rem))]">{s && result ? <StructureChart structure={s} rows={result.rows} flags={result.flags} large /> : <div className="survey-grid h-full" />}</div>
         <div className="grid gap-6 border-t border-rule px-5 py-4 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-start">
           <dl className="flex gap-6">
             {result && onSale &&
