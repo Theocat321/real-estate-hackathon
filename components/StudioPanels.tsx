@@ -41,10 +41,10 @@ export function saleNote(result: EngineResult, o: OptionId, a: Assumptions): str
 }
 
 /** Stacked bar: what each option costs over the chosen period. */
-export function TotalsChart({ result, horizon, family, assume = DEFAULT_ASSUMPTIONS }: { result: EngineResult; horizon: Horizon; family: boolean; assume?: Assumptions }) {
-  const b = Object.fromEntries(OPTIONS.map((o) => [o, breakdown(result, o, horizon, family, assume)])) as Record<OptionId, Breakdown>;
-  const parts = PARTS.filter((p) => OPTIONS.some((o) => b[o][p] !== 0));
-  const data = OPTIONS.map((o) => ({ option: o, ...Object.fromEntries(parts.map((p) => [p, b[o][p]])) }));
+export function TotalsChart({ result, horizon, family, assume = DEFAULT_ASSUMPTIONS, options = OPTIONS }: { result: EngineResult; horizon: Horizon; family: boolean; assume?: Assumptions; options?: OptionId[] }) {
+  const b = Object.fromEntries(options.map((o) => [o, breakdown(result, o, horizon, family, assume)])) as Record<OptionId, Breakdown>;
+  const parts = PARTS.filter((p) => options.some((o) => b[o][p] !== 0));
+  const data = options.map((o) => ({ option: o, ...Object.fromEntries(parts.map((p) => [p, b[o][p]])) }));
   return (
     <div className="flex h-full flex-col">
       <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
@@ -86,6 +86,7 @@ export function TotalsTable({
   best,
   onPick,
   assume = DEFAULT_ASSUMPTIONS,
+  options = OPTIONS,
 }: {
   result: EngineResult;
   horizon: Horizon;
@@ -93,9 +94,10 @@ export function TotalsTable({
   best?: OptionId | null;
   onPick?: (o: OptionId) => void;
   assume?: Assumptions;
+  options?: OptionId[];
 }) {
-  const b = Object.fromEntries(OPTIONS.map((o) => [o, breakdown(result, o, horizon, family, assume)])) as Record<OptionId, Breakdown>;
-  const parts = PARTS.filter((p) => OPTIONS.some((o) => b[o][p] !== 0));
+  const b = Object.fromEntries(options.map((o) => [o, breakdown(result, o, horizon, family, assume)])) as Record<OptionId, Breakdown>;
+  const parts = PARTS.filter((p) => options.some((o) => b[o][p] !== 0));
   const short: Record<Part, string> = { purchase: "Purchase", yearly: "Yearly", tenYear: "10-year", death: "Death", sale: "Sale" };
   return (
     <table className="w-full text-[13px]">
@@ -111,7 +113,7 @@ export function TotalsTable({
         </tr>
       </thead>
       <tbody>
-        {OPTIONS.map((o) => (
+        {options.map((o) => (
           <tr key={o} className="border-t border-rule-soft">
             <td className={`py-1.5 font-bold ${o === best ? "text-edge" : ""}`}>
               {onPick ? (
@@ -145,8 +147,8 @@ export function TotalsTable({
 }
 
 /** Bar per option: stamp duty the next buyer saves when the packet is sold through it. */
-export function SaleChart({ result }: { result: EngineResult }) {
-  const data = OPTIONS.map((o) => ({ option: o, saving: saleSaving(result, o).saving }));
+export function SaleChart({ result, options = OPTIONS }: { result: EngineResult; options?: OptionId[] }) {
+  const data = options.map((o) => ({ option: o, saving: saleSaving(result, o).saving }));
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="28%">
@@ -166,7 +168,7 @@ export function SaleChart({ result }: { result: EngineResult }) {
 }
 
 /** Per option: buyer's SDLT bought directly, buyer's duty on this sale, and the saving. */
-export function SaleTable({ result, best, onPick }: { result: EngineResult; best?: OptionId | null; onPick?: (o: OptionId) => void }) {
+export function SaleTable({ result, best, onPick, options = OPTIONS }: { result: EngineResult; best?: OptionId | null; onPick?: (o: OptionId) => void; options?: OptionId[] }) {
   return (
     <table className="w-full text-[13px]">
       <thead>
@@ -177,7 +179,7 @@ export function SaleTable({ result, best, onPick }: { result: EngineResult; best
         </tr>
       </thead>
       <tbody>
-        {OPTIONS.map((o) => {
+        {options.map((o) => {
           const s = saleSaving(result, o);
           return (
             <tr key={o} className="border-t border-rule-soft">

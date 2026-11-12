@@ -36,6 +36,8 @@ export default function StudioPage() {
   const [exporting, setExporting] = useState(false);
   const [cliffs, setCliffs] = useState<Cliff[] | null>(null);
   const [tab, setTab] = useState<OptionId>("A");
+  // Open on the best option each time the result or the period changes; the user can still click another.
+  const [pickedFor, setPickedFor] = useState<{ result: EngineResult; horizon: Horizon } | null>(null);
   const [horizon, setHorizon] = useState<Horizon>("25y_sell");
   const [assume, setAssume] = useState<Assumptions>(DEFAULT_ASSUMPTIONS);
   const [panelOpen, setPanelOpen] = useState(true);
@@ -119,15 +121,23 @@ export default function StudioPage() {
   const savingOf = (o: OptionId) => (result ? saleSaving(result, o).saving : 0);
   // On sale, higher is better (a saving); otherwise lower is better (a cost). `score` is lower-is-better either way.
   const score = (o: OptionId) => (onSale ? -savingOf(o) : totalOf(o));
-  const best = result ? OPTIONS.reduce((a, b) => (score(b) < score(a) ? b : a)) : null;
-  const tied = best ? OPTIONS.filter((o) => score(o) === score(best)) : [];
+  // Option D is a family trust: only shown when a family is investing.
+  const shown = family ? OPTIONS : OPTIONS.filter((o) => o !== "D");
+  const best = result ? shown.reduce((a, b) => (score(b) < score(a) ? b : a)) : null;
+  const tied = best ? shown.filter((o) => score(o) === score(best)) : [];
   const soleBest = tied.length === 1 && !(onSale && best && savingOf(best) === 0) ? best : null;
+  if (result && best && (pickedFor?.result !== result || pickedFor.horizon !== horizon)) {
+    setPickedFor({ result, horizon });
+    if (best !== tab) setTab(best);
+  }
+  const shownCliffs = cliffs && !family ? cliffs.filter((c) => c.best.option !== "D") : cliffs;
   const s = structures?.find((x) => x.option === tab);
   const rows = result?.rows.filter((r) => r.option === tab) ?? [];
 
   function onTabKey(e: React.KeyboardEvent) {
-    const i = OPTIONS.indexOf(tab);
-    const next = e.key === "ArrowRight" ? OPTIONS[(i + 1) % 4] : e.key === "ArrowLeft" ? OPTIONS[(i + 3) % 4] : null;
+    const i = shown.indexOf(tab);
+    const n = shown.length;
+    const next = e.key === "ArrowRight" ? shown[(i + 1) % n] : e.key === "ArrowLeft" ? shown[(i + n - 1) % n] : null;
     if (next) {
       e.preventDefault();
       setTab(next);
@@ -223,8 +233,8 @@ export default function StudioPage() {
       )}
 
       {/* Option tabs: each one is also the at-a-glance comparison */}
-      <div role="tablist" aria-label="Ownership options" onKeyDown={onTabKey} className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
-        {OPTIONS.map((o) => {
+      <div role="tablist" aria-label="Ownership options" onKeyDown={onTabKey} className={`mt-4 grid grid-cols-2 gap-2 ${shown.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
+        {shown.map((o) => {
           const st = structures?.find((x) => x.option === o);
           const cost = result ? (onSale ? savingOf(o) : totalOf(o)) : null;
           const delta = result && best && cost != null ? Math.abs(score(o) - score(best)) : null;
@@ -400,8 +410,8 @@ export default function StudioPage() {
               {onSale ? (
                 <>
                   <h3 className="text-[13px] font-semibold">What each option saves when you sell</h3>
-                  <div className="mt-2 h-44">{result && <SaleChart result={result} />}</div>
-                  <div className="mt-3">{result && <SaleTable result={result} best={soleBest} onPick={setTab} />}</div>
+                  <div className="mt-2 h-44">{result && <SaleChart result={result} options={shown} />}</div>
+                  <div className="mt-3">{result && <SaleTable result={result} best={soleBest} onPick={setTab} options={shown} />}</div>
                   <p className="mt-2 text-[11px] text-faint">
                     Selling the company instead of the properties: the next buyer pays 0.5% stamp duty on the shares, not SDLT on the properties. The saving is theirs, so a seller can ask for some of it in the price. Today&apos;s prices; capital gains tax not counted.
                   </p>
@@ -409,8 +419,8 @@ export default function StudioPage() {
               ) : (
                 <>
                   <h3 className="text-[13px] font-semibold">What each option costs over {HORIZON_LABEL[horizon].toLowerCase()}</h3>
-                  <div className="mt-2 h-44">{result && <TotalsChart result={result} horizon={horizon} family={family} assume={assume} />}</div>
-                  <div className="mt-3">{result && <TotalsTable result={result} horizon={horizon} family={family} best={soleBest} onPick={setTab} assume={assume} />}</div>
+                  <div className="mt-2 h-44">{result && <TotalsChart result={result} horizon={horizon} family={family} assume={assume} options={shown} />}</div>
+                  <div className="mt-3">{result && <TotalsTable result={result} horizon={horizon} family={family} best={soleBest} onPick={setTab} assume={assume} options={shown} />}</div>
                   <p className="mt-2 text-[11px] text-faint">
                     {horizon.startsWith("25y") && family ? "Assumes one death in 25 years: without a trust the family pays 40% inheritance tax above the nil-rate band. " : ""}
                     {showRelief && assume.atedRelief ? "ATED relief assumed: properties let commercially. " : ""}
@@ -422,8 +432,8 @@ export default function StudioPage() {
               )}
             </section>
             <div className="-mx-4 border-t border-rule-soft" />
-            <CliffPanel cliffs={cliffs} loading={loading || (!!result && !cliffs)} bare />
-            {result && (
+            <CliffPanel cliffs={shownCliffs} loading={loading || (!!result && !cliffs)} bare />
+            {result && family && (
               <section className="rounded-md bg-ink p-4 text-sheet [&_button]:border-sheet/30 [&_button:hover]:bg-sheet/10 [&_button:hover]:text-sheet">
                 <h3 className="mb-2 text-[12px] font-medium opacity-70">Option D, family trust</h3>
                 <OptionDTimelineDark result={result} />
@@ -437,7 +447,7 @@ export default function StudioPage() {
           onClick={() => setPanelOpen(true)}
           className="fixed bottom-12 right-6 z-30 rounded-full bg-ink px-4 py-2.5 text-[13px] font-semibold text-sheet shadow-lg hover:bg-ink-soft"
         >
-          Compare and save{cliffs && cliffs.length > 0 ? ` (${cliffs.length} savings)` : ""}
+          Compare and save{shownCliffs && shownCliffs.length > 0 ? ` (${shownCliffs.length} savings)` : ""}
         </button>
       )}
     </div>

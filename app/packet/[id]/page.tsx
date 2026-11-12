@@ -5,18 +5,15 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Packet, Property, Sourced } from "@/contracts";
 import { PartsMoney, SourcedMoney } from "@/components/SourceDrawer";
-import { Figure, Notice, UseTag } from "@/components/ui";
-import { baseOf, gbp, loadPacket, packetFromUpload, rememberBase, savePacket, savePlan, type InvestorPreset } from "@/lib/api";
-import { OptimisePanel } from "@/components/OptimisePanel";
-import type { OptimiseResult } from "@/engine/optimise";
+import { Figure, UseTag } from "@/components/ui";
+import { INVESTOR_PRESETS, baseOf, gbp, loadPacket, type InvestorPreset } from "@/lib/api";
 
 export default function PacketPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [packet, setPacket] = useState<Packet | null>(null);
   const [missing, setMissing] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [preset, setPreset] = useState<InvestorPreset>("uk_pension");
 
   useEffect(() => {
     const p = loadPacket(decodeURIComponent(id));
@@ -39,21 +36,8 @@ export default function PacketPage() {
   const seed = packet.items.find((p) => p.id === packet.seed_id) ?? packet.items[0];
   const base = baseOf(packet.id);
   const homesRes = packet.items.filter((p) => p.use === "residential").reduce((n, p) => n + Math.max(1, p.dwellings), 0);
+  const anyYield = packet.items.some((p) => p.yield_pct);
   const homesMixed = packet.items.filter((p) => p.use === "mixed").reduce((n, p) => n + p.dwellings, 0);
-
-  function applyPlan(items: Property[], plan: OptimiseResult, preset: InvestorPreset) {
-    if (!packet) return;
-    const groups = plan.best.groups.length;
-    const next: Packet = {
-      ...packetFromUpload(items, "plan"),
-      seed_id: items.some((p) => p.id === packet.seed_id) ? packet.seed_id : items[0].id,
-      match_reason: `Optimised: ${items.length} lots in ${groups} purchase${groups > 1 ? "s" : ""}, ${plan.best.rate_pct.toFixed(1)}% of price in tax over ${plan.horizon_years} years.`,
-    };
-    if (next.id !== packet.id) rememberBase(next.id, packet.id);
-    savePacket(next);
-    savePlan(next.id, plan);
-    router.push(`/studio/${encodeURIComponent(next.id)}?investor=${preset}`);
-  }
 
   function removeAdded() {
     const prev = base ? loadPacket(base) : null;
@@ -88,12 +72,16 @@ export default function PacketPage() {
             <Figure label={priceLabel(seed)} big>
               <SourcedMoney title={`${priceLabel(seed)}, ${seed.address}`} sourced={seed.price_gbp} />
             </Figure>
-            <Figure label="Rent a year" big>
-              <SourcedMoney title={`Rent a year, ${seed.address}`} sourced={seed.rent_pa_gbp} />
-            </Figure>
-            <Figure label="Yield" big>
-              <SourcedMoney title={`Yield, ${seed.address}`} sourced={seed.yield_pct} format="pct" />
-            </Figure>
+            {seed.rent_pa_gbp && (
+              <Figure label="Rent a year" big>
+                <SourcedMoney title={`Rent a year, ${seed.address}`} sourced={seed.rent_pa_gbp} />
+              </Figure>
+            )}
+            {seed.yield_pct && (
+              <Figure label="Yield" big>
+                <SourcedMoney title={`Yield, ${seed.address}`} sourced={seed.yield_pct} format="pct" />
+              </Figure>
+            )}
           </div>
         </section>
 
@@ -112,7 +100,7 @@ export default function PacketPage() {
                   <th className="px-4 py-2.5 font-medium">Property</th>
                   <th className="px-2 font-medium">Use</th>
                   <th className="px-2 text-right font-medium">Price</th>
-                  <th className="px-2 text-right font-medium">Yield</th>
+                  {anyYield && <th className="px-2 text-right font-medium">Yield</th>}
                   <th className="px-4 font-medium">Source</th>
                 </tr>
               </thead>
@@ -139,9 +127,11 @@ export default function PacketPage() {
                         <SourcedMoney title={`${priceLabel(p)}, ${p.address}`} sourced={p.price_gbp} />
                         {p.price_kind && <span className="ml-1.5 text-[11px] text-muted">{p.price_kind}</span>}
                       </td>
-                      <td className="px-2 text-right">
-                        <SourcedMoney title={`Yield, ${p.address}`} sourced={p.yield_pct} format="pct" />
-                      </td>
+                      {anyYield && (
+                        <td className="px-2 text-right">
+                          <SourcedMoney title={`Yield, ${p.address}`} sourced={p.yield_pct} format="pct" />
+                        </td>
+                      )}
                       <td className="whitespace-nowrap px-4">
                         <SourceLink p={p} />
                       </td>
@@ -200,20 +190,33 @@ export default function PacketPage() {
           )}
         </section>
 
-        <OptimisePanel packet={packet} onApply={applyPlan} />
-        {error && <Notice tone="error">{error}</Notice>}
+        <section className="rounded-md border border-rule bg-sheet p-6">
+          <h2 className="text-[13px] font-medium text-muted">Who is investing</h2>
+          <div className="mt-2 flex rounded-md border border-rule p-0.5 text-[13px]">
+            {(Object.keys(INVESTOR_PRESETS) as InvestorPreset[]).map((k) => (
+              <button
+                key={k}
+                onClick={() => setPreset(k)}
+                aria-pressed={preset === k}
+                className={`flex-1 rounded-[4px] px-2 py-1.5 transition-colors ${preset === k ? "bg-ink font-semibold text-sheet" : "text-muted hover:text-ink"}`}
+              >
+                {INVESTOR_PRESETS[k][0].label}
+              </button>
+            ))}
+          </div>
+          <Link
+            href={`/studio/${encodeURIComponent(packet.id)}?investor=${preset}`}
+            className="mt-4 block rounded-md bg-ink px-4 py-3.5 text-center text-[15px] font-semibold text-sheet transition-colors hover:bg-ink-soft"
+          >
+            Find the best structure
+          </Link>
+        </section>
 
         {base && (
           <button onClick={removeAdded} className="text-[13px] font-medium text-muted underline decoration-rule underline-offset-2 hover:text-ink">
             Back to the original packet
           </button>
         )}
-        <Link
-          href={`/studio/${encodeURIComponent(packet.id)}`}
-          className="block rounded-md bg-ink px-4 py-3.5 text-center text-[15px] font-semibold text-sheet transition-colors hover:bg-ink-soft"
-        >
-          Compare four structures
-        </Link>
       </aside>
     </div>
   );
