@@ -11,3 +11,5 @@
 - `lib/horizon.ts`: new `"sale"` horizon and `saleSaving(result, option)`. Saving = next buyer's direct SDLT (proxy: option A's purchase SDLT rows, today's prices) minus the stamp duty on that option's sale (engine `exit` rows; A has none, so its saving is 0).
 - Studio: "On sale" button in "Compare over". Cards show the saving (most saved is highlighted). The bottom bar shows direct SDLT, duty on this sale and the saving. The side panel shows a savings chart and table.
 - Non-goals: price growth, CGT, ATED relief, PDF export.
+
+> **Superseded in part (2026-11-12):** the ATED relief is no longer a non-goal or a client-side row filter. Rental-business relief and profits paid out are now `ScenarioInput.assumptions` (contract 1.1.0) and the engine prices them. See `docs/superpowers/plans/2026-11-12-tax-structure-gaps.md` and `engine/HANDOFF.md`. The sale-saving design above is otherwise unchanged.

@@ -1,6 +1,18 @@
 // contracts/index.ts — Structure Studio shared contract.
 // OWNED BY THE LEAD. Agents import from here and never edit it.
 // Any change: ask the lead, who bumps CONTRACT_VERSION and tells every agent.
+//
+// Version history:
+//   1.1.0  Added ScenarioInput.assumptions (type Assumptions) and the tax codes
+//          DIVIDEND_TAX and INCOME_TAX_RENT. Absent assumptions mean both flags false.
+//   1.0.0  First shared contract.
+//
+// Assumptions fields:
+//   rental_relief       true = homes are let to unconnected tenants, so property-rental-business
+//                       relief applies: 17% SDLT becomes higher rates and ATED rows are GBP 0.
+//   distribute_profits  true = PropCo pays its after-tax profit out each year, so dividend tax
+//                       is charged on each owner.
+//   Engine/API default is false. Studio, Setup and the bot send STUDIO_ASSUMPTIONS (lib/horizon.ts), both true.
 
 export const CONTRACT_VERSION = "1.1.0";
 

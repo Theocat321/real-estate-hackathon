@@ -1,5 +1,10 @@
 # Tax and Structure Gaps (Phase 1) Implementation Plan
 
+## Status
+
+- Phase 1 (Tasks 1-6 plus final-review fixes): done, commits 70c9763..HEAD (2026-11-12). Open items are in `engine/HANDOFF.md`.
+- Phase 2 (table at the end): open, each item needs a decision first.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Fix the gaps that change which option the Studio ranks cheapest: inconsistent rental-business relief, investors collapsed into a generic buyer, missing tax on paying profits out, families taxed as companies, and associated companies ignored. Also make the structure chart show flags and what each edge means.

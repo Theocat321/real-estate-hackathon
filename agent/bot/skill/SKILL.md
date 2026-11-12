@@ -22,7 +22,8 @@ npx tsx agent/bot/cli.ts "build packet from Wireless House, Midsomer Norton"
 
 Flow: address -> `GET /api/properties?q=` (first hit) -> `POST /api/match` -> `POST /api/structures` -> `POST /api/engine`.
 Reply: packet size and total price, each option's totals by stage, number of review flags, studio link.
-Investors default to UK pension fund 60% / UK family office 40%.
+Investors default to UK pension fund 60% / UK family office 40% (`DEFAULT_INVESTORS` in `agent/bot/commands.ts`, same as `fixtures/sample.json`).
+The bot sends `STUDIO_ASSUMPTIONS` to `/api/engine` (rental-business relief on, profits paid out each year), so its figures match what the Studio and Setup show by default. These are not the engine's own defaults (both off).
 
 ### explain option <A|B|C|D>
 
