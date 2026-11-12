@@ -11,7 +11,7 @@ import type { OptimiseResult } from "@/engine/optimise";
 import { CostMoney } from "@/components/SourceDrawer";
 import { StructureChart } from "@/components/StructureChart";
 import { FlagList, OptionDTimeline, SaleChart, SaleTable, TotalsChart, TotalsTable, saleNote } from "@/components/StudioPanels";
-import { DEFAULT_ASSUMPTIONS, HORIZONS, assumptionsQuery, toEngineAssumptions, HORIZON_LABEL, breakdown, isFamily, paysAted, saleSaving, type Assumptions, type Horizon } from "@/lib/horizon";
+import { DEFAULT_ASSUMPTIONS, assumptionsQuery, toEngineAssumptions, HORIZON_LABEL, breakdown, isFamily, paysAted, saleSaving, type Assumptions, type Horizon } from "@/lib/horizon";
 import {
   INVESTOR_PRESETS,
   OPTIONS,
@@ -40,6 +40,8 @@ export default function StudioPage() {
   const [pickedFor, setPickedFor] = useState<{ result: EngineResult; horizon: Horizon } | null>(null);
   const [horizon, setHorizon] = useState<Horizon>("25y_sell");
   const [assume, setAssume] = useState<Assumptions>(DEFAULT_ASSUMPTIONS);
+  // Remembers "sells it" while the period is changed, so going back to 25 years restores it.
+  const [sells, setSells] = useState(true);
   const [panelOpen, setPanelOpen] = useState(true);
   const [changeNote, setChangeNote] = useState<string | null>(null);
   const prev = useRef<{ preset: InvestorPreset; structures: Structure[]; result: EngineResult } | null>(null);
@@ -142,6 +144,8 @@ export default function StudioPage() {
   // A company pays corporation tax on rent, so paying out its profits brings dividend tax.
   const showDividends = !!result && result.rows.some((r) => r.tax === "CORP_TAX_RENT" || r.tax === "DIVIDEND_TAX");
   const savingOf = (o: OptionId) => (result ? saleSaving(result, o).saving : 0);
+  // What an option saves over the same period versus option A, buying each property directly.
+  const savedVsA = (o: OptionId) => totalOf("A") - totalOf(o);
   // On sale, higher is better (a saving); otherwise lower is better (a cost). `score` is lower-is-better either way.
   const score = (o: OptionId) => (onSale ? -savingOf(o) : totalOf(o));
   // Option D is a family trust: only shown when a family is investing.
@@ -181,82 +185,90 @@ export default function StudioPage() {
           </h1>
           <p className="truncate text-[13px] text-muted">Starting from {seed.address}</p>
         </div>
-        <fieldset className="ml-auto">
-          <legend className="mb-1 text-[12px] text-muted">Compare over</legend>
-          <div className="flex rounded-md border border-rule bg-sheet p-0.5 text-[13px]">
-            {HORIZONS.map((h) => (
-              <button
-                key={h}
-                onClick={() => setHorizon(h)}
-                aria-pressed={horizon === h}
-                className={`rounded-[4px] px-3 py-1.5 transition-colors ${horizon === h ? "bg-ink font-semibold text-sheet" : "text-muted hover:text-ink"}`}
-              >
-                {HORIZON_LABEL[h]}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-        <div>
-          <p className="mb-1 text-[12px] text-muted">Who is investing</p>
-          <p className="rounded-md border border-rule bg-sheet px-3 py-[7px] text-[13px] font-semibold">{INVESTOR_PRESETS[preset][0].label}</p>
-        </div>
         {!panelOpen && (
           <button
             onClick={onExport}
             disabled={!result || exporting}
-            className="rounded-md border border-ink bg-sheet px-4 py-2 text-[13px] font-semibold transition-colors hover:bg-ink hover:text-sheet disabled:opacity-40"
+            className="ml-auto rounded-md border border-ink bg-sheet px-4 py-2 text-[13px] font-semibold transition-colors hover:bg-ink hover:text-sheet disabled:opacity-40"
           >
             {exporting ? "Preparing PDF…" : "Download PDF"}
           </button>
         )}
       </div>
-      {(showRelief || showShare || showDividends) && (
-        <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px]">
-          {showRelief && (
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                checked={assume.rentalRelief}
-                onChange={(e) => setAssume({ ...assume, rentalRelief: e.target.checked })}
-                className="size-4 accent-[#17262a]"
-              />
-              <span>
-                Homes let to unconnected tenants <span className="text-muted">(rental-business relief on 17% SDLT and ATED)</span>
-              </span>
-            </label>
-          )}
-          {showDividends && (
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                checked={assume.distributeProfits}
-                onChange={(e) => setAssume({ ...assume, distributeProfits: e.target.checked })}
-                className="size-4 accent-[#17262a]"
-              />
-              <span>
-                Profits paid out each year <span className="text-muted">(dividend tax on what companies pay their owners)</span>
-              </span>
-            </label>
-          )}
-          {showShare && (
-            <div className="flex items-center gap-2">
-              <span className="text-muted">Of the buyer&apos;s stamp duty saving, you get back</span>
-              <div className="flex rounded-md border border-rule bg-sheet p-0.5">
-                {[0, 0.25, 0.5, 0.75, 1].map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => setAssume({ ...assume, saleShare: v })}
-                    aria-pressed={assume.saleShare === v}
-                    className={`rounded-[4px] px-2.5 py-1 tabular transition-colors ${assume.saleShare === v ? "bg-ink font-semibold text-sheet" : "text-muted hover:text-ink"}`}
-                  >
-                    {v * 100}%
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {/* The scenario as one sentence: each underlined part is a choice */}
+      <p className="mt-3 max-w-[70rem] text-[17px] leading-[2.1] text-ink">
+        <span className="font-semibold">{INVESTOR_PRESETS[preset][0].label}</span> holds the packet{" "}
+        <Pick
+          label="How long the packet is held"
+          value={horizon === "25y_sell" ? "25y" : horizon}
+          onChange={(v) => setHorizon(v === "25y" && sells ? "25y_sell" : (v as Horizon))}
+          options={[
+            ["purchase", "just on purchase"],
+            ["10y", "for 10 years"],
+            ["25y", "for 25 years"],
+          ]}
+        />
+        {(horizon === "25y" || horizon === "25y_sell") && (
+          <>
+            , then{" "}
+            <Pick
+              label="At the end of 25 years"
+              value={horizon === "25y_sell" ? "sell" : "keep"}
+              onChange={(v) => {
+                setSells(v === "sell");
+                setHorizon(v === "sell" ? "25y_sell" : "25y");
+              }}
+              options={[
+                ["keep", "keeps it"],
+                ["sell", "sells it"],
+              ]}
+            />
+            {horizon === "25y_sell" && (
+              <>
+                {" "}and gets back{" "}
+                <Pick
+                  label="Share of the buyer's stamp duty saving you get back"
+                  value={String(assume.saleShare)}
+                  onChange={(v) => setAssume({ ...assume, saleShare: Number(v) })}
+                  options={[0, 0.25, 0.5, 0.75, 1].map((v) => [String(v), `${v * 100}%`])}
+                />{" "}
+                of the next buyer&apos;s stamp duty saving in the price
+              </>
+            )}
+          </>
+        )}
+        .
+        {showRelief && (
+          <>
+            {" "}Homes are{" "}
+            <Pick
+              label="Who the homes are let to"
+              value={assume.rentalRelief ? "yes" : "no"}
+              onChange={(v) => setAssume({ ...assume, rentalRelief: v === "yes" })}
+              options={[
+                ["yes", "let to unconnected tenants"],
+                ["no", "not let to unconnected tenants"],
+              ]}
+            />
+            .
+          </>
+        )}
+        {showDividends && (
+          <>
+            {" "}Company profits are{" "}
+            <Pick
+              label="What companies do with their profits"
+              value={assume.distributeProfits ? "yes" : "no"}
+              onChange={(v) => setAssume({ ...assume, distributeProfits: v === "yes" })}
+              options={[
+                ["yes", "paid out each year"],
+                ["no", "kept in the company"],
+              ]}
+            />
+            .
+          </>
+        )}
+      </p>
       {error && (
         <div className="mt-3">
           <Notice tone="error">{error}</Notice>
@@ -298,9 +310,13 @@ export default function StudioPage() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="line-clamp-2 block text-[13px] font-semibold leading-tight">{st?.name ?? "…"}</span>
-                <span className="wide tabular mt-1 block text-[18px] font-bold leading-none">{cost == null ? "…" : gbp(cost)}</span>
+                <span className="wide tabular mt-1 block text-[18px] font-bold leading-none">
+                  {cost == null ? "…" : onSale ? gbp(cost) : o === "A" ? "Baseline" : savedVsA(o) >= 0 ? `${gbp(savedVsA(o))} saved` : `${gbp(-savedVsA(o))} more`}
+                </span>
                 <span className={`mt-1 block text-[11px] leading-tight ${selected ? "text-sheet/70" : isBest ? "font-medium text-edge" : "text-muted"}`}>
-                  {onSale
+                  {!onSale && cost != null
+                    ? `${o === "A" ? "Buying directly costs" : "Costs"} ${gbp(cost)} ${horizon === "purchase" ? "on purchase" : `over ${HORIZON_LABEL[horizon]}`}${isBest ? ", the lowest" : ""}`
+                    : onSale
                     ? cost == null
                       ? ""
                       : cost === 0
@@ -389,6 +405,12 @@ export default function StudioPage() {
                       <div className="border-l border-rule pl-6">
                         <dt className="whitespace-nowrap text-[12px] text-muted">Total, {HORIZON_LABEL[horizon]}</dt>
                         <dd className={`wide tabular text-[20px] font-bold ${tab === soleBest ? "text-edge" : ""}`}>{gbp(b.total)}</dd>
+                      </div>
+                    )}
+                    {tab !== "A" && (
+                      <div className="border-l border-rule pl-6">
+                        <dt className="whitespace-nowrap text-[12px] text-muted">{savedVsA(tab) >= 0 ? "Saved vs buying directly" : "More than buying directly"}</dt>
+                        <dd className={`wide tabular text-[20px] font-bold ${savedVsA(tab) > 0 ? "text-edge" : ""}`}>{gbp(Math.abs(savedVsA(tab)))}</dd>
                       </div>
                     )}
                   </>
@@ -492,6 +514,29 @@ export default function StudioPage() {
         </button>
       )}
     </div>
+  );
+}
+
+/** One choice inside the scenario sentence: reads as an underlined phrase, opens a native menu. */
+function Pick({ label, value, options, onChange }: { label: string; value: string; options: [string, string][]; onChange: (v: string) => void }) {
+  return (
+    <span className="relative inline-block">
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="cursor-pointer appearance-none rounded-[3px] border-b-2 border-ink bg-sage-soft/60 py-0 pl-1.5 pr-5 font-semibold text-ink transition-colors hover:bg-sage-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+      >
+        {options.map(([v, text]) => (
+          <option key={v} value={v}>
+            {text}
+          </option>
+        ))}
+      </select>
+      <span aria-hidden className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[11px]">
+        ▾
+      </span>
+    </span>
   );
 }
 
