@@ -8,15 +8,15 @@ import type { CostRow, NodeKind, StructNode, Structure } from "@/contracts";
 import { CostMoney } from "@/components/SourceDrawer";
 
 const NODE_W = 170;
-const NODE_H = 50;
+const NODE_H = 56;
 
 const KIND_STYLE: Record<NodeKind | "propco", string> = {
-  investor: "border-slate-300 bg-slate-50 text-slate-800",
-  trust: "border-purple-300 bg-purple-50 text-purple-900",
-  fund: "border-teal-300 bg-teal-50 text-teal-900",
-  company: "border-blue-300 bg-blue-50 text-blue-900",
-  propco: "border-blue-300 bg-blue-50 text-blue-900",
-  property: "border-amber-300 bg-amber-50 text-amber-900",
+  investor: "border border-ink bg-sheet text-ink",
+  trust: "bg-ink text-sheet",
+  fund: "border border-sage bg-sage-soft text-ink",
+  company: "border border-ink-soft bg-paper text-ink",
+  propco: "border border-ink-soft bg-paper text-ink",
+  property: "edged bg-sheet text-ink",
 };
 
 const TAX_SHORT: Record<CostRow["tax"], string> = {
@@ -37,22 +37,22 @@ function StructNodeView({ data }: NodeProps<Node<StructNodeData>>) {
   const byTax = new Map<string, CostRow[]>();
   for (const r of rows) byTax.set(TAX_SHORT[r.tax], [...(byTax.get(TAX_SHORT[r.tax]) ?? []), r]);
   return (
-    <div className={`rounded-lg border px-2 py-1.5 text-[11px] leading-tight shadow-sm ${KIND_STYLE[node.kind] ?? KIND_STYLE.company}`} style={{ width: NODE_W }}>
-      <Handle type="target" position={Position.Top} className="!h-1 !w-1 !border-0 !bg-slate-300" />
+    <div className={`rounded-[3px] px-2.5 py-2 text-[12px] leading-tight ${KIND_STYLE[node.kind] ?? KIND_STYLE.company}`} style={{ width: NODE_W }}>
+      <Handle type="target" position={Position.Top} className="!h-1 !w-1 !min-w-0 !border-0 !bg-transparent" />
       <div className="flex items-start justify-between gap-1">
-        <span className="line-clamp-2 font-medium">{node.label}</span>
-        {node.jurisdiction && <span className="shrink-0 rounded bg-white/70 px-1 text-[9px] text-slate-500">{node.jurisdiction}</span>}
+        <span className="line-clamp-2 font-semibold">{node.label}</span>
+        {node.jurisdiction && <span className="shrink-0 text-[10px] opacity-60">{node.jurisdiction}</span>}
       </div>
       {byTax.size > 0 && (
         <div className="nodrag nopan mt-1 flex flex-wrap gap-1">
           {[...byTax.entries()].map(([label, rs]) => (
-            <span key={label} className="rounded bg-white px-1 py-px text-[10px] text-slate-700 ring-1 ring-slate-200">
+            <span key={label} className="tabular rounded-[2px] bg-sheet px-1 py-px text-[11px] text-ink ring-1 ring-rule">
               {label} <CostMoney title={`Option ${option} · ${label} · ${node.label}`} rows={rs} />
             </span>
           ))}
         </div>
       )}
-      <Handle type="source" position={Position.Bottom} className="!h-1 !w-1 !border-0 !bg-slate-300" />
+      <Handle type="source" position={Position.Bottom} className="!h-1 !w-1 !min-w-0 !border-0 !bg-transparent" />
     </div>
   );
 }
@@ -61,7 +61,7 @@ const nodeTypes = { struct: StructNodeView };
 
 function layout(structure: Structure, rows: CostRow[]): { nodes: Node<StructNodeData>[]; edges: Edge[] } {
   const g = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: "TB", nodesep: 10, ranksep: 22, marginx: 8, marginy: 8 });
+  g.setGraph({ rankdir: "TB", nodesep: 14, ranksep: 28, marginx: 8, marginy: 8 });
   g.setDefaultEdgeLabel(() => ({}));
   for (const n of structure.nodes) g.setNode(n.id, { width: NODE_W, height: NODE_H });
   for (const e of structure.edges) g.setEdge(e.from, e.to);
@@ -81,8 +81,8 @@ function layout(structure: Structure, rows: CostRow[]): { nodes: Node<StructNode
     source: e.from,
     target: e.to,
     label: e.pct < 100 ? `${e.pct}%` : undefined,
-    style: { stroke: "#94a3b8" },
-    labelStyle: { fontSize: 10, fill: "#64748b" },
+    
+    labelStyle: { fontSize: 11, fill: "#17262a", fontWeight: 600 },
   }));
   return { nodes, edges };
 }
@@ -90,7 +90,7 @@ function layout(structure: Structure, rows: CostRow[]): { nodes: Node<StructNode
 export function StructureChart({ structure, rows }: { structure: Structure; rows: CostRow[] }) {
   const { nodes, edges } = useMemo(() => layout(structure, rows), [structure, rows]);
   return (
-    <div className="h-full w-full">
+    <div className="survey-grid h-full w-full">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -104,7 +104,7 @@ export function StructureChart({ structure, rows }: { structure: Structure; rows
         proOptions={{ hideAttribution: true }}
         minZoom={0.3}
       >
-        <Background gap={16} color="#f1f5f9" />
+        
       </ReactFlow>
     </div>
   );

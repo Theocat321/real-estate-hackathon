@@ -1,77 +1,98 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { CostRow, EngineResult, Flag, OptionId, Stage } from "@/contracts";
 import { CostMoney } from "@/components/SourceDrawer";
 import { OPTIONS, STAGES, gbp } from "@/lib/api";
 
-const STAGE_LABEL: Record<Stage, string> = {
-  acquire: "Acquire",
-  hold: "Hold (p.a.)",
-  exit: "Exit",
-  ten_year: "10-year",
-  death: "Death (comparator)",
+export const STAGE_LABEL: Record<Stage, string> = {
+  acquire: "On purchase",
+  hold: "Each year",
+  exit: "On sale",
+  ten_year: "Every 10 years",
+  death: "On death (if held personally)",
 };
 const STAGE_COLOR: Record<Stage, string> = {
-  acquire: "#2f5bea",
-  hold: "#7c93f0",
-  exit: "#0f766e",
-  ten_year: "#9333ea",
-  death: "#cbd5e1",
+  acquire: "#17262a",
+  hold: "#5e8a7c",
+  exit: "#9fb8ae",
+  ten_year: "#b8202f",
+  death: "#cdd5d0",
 };
 
-/** Grouped bar: totals by option × stage. */
+const k = (v: number) => (v >= 1000 ? `£${Math.round(v / 1000)}k` : `£${v}`);
+
+/** Stacked bar: cost by option and stage. Death comparator excluded (not a cost of any option). */
 export function TotalsChart({ result }: { result: EngineResult }) {
-  const stages = STAGES.filter((s) => OPTIONS.some((o) => (result.totals[o]?.[s] ?? 0) > 0));
-  const data = OPTIONS.map((o) => ({ option: `Option ${o}`, ...Object.fromEntries(stages.map((s) => [s, result.totals[o]?.[s] ?? 0])) }));
+  const stages = STAGES.filter((s) => s !== "death" && OPTIONS.some((o) => (result.totals[o]?.[s] ?? 0) > 0));
+  const data = OPTIONS.map((o) => ({ option: o, ...Object.fromEntries(stages.map((s) => [s, result.totals[o]?.[s] ?? 0])) }));
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-        <CartesianGrid vertical={false} stroke="#f1f5f9" />
-        <XAxis dataKey="option" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-        <YAxis tickFormatter={(v: number) => (v >= 1000 ? `£${Math.round(v / 1000)}k` : `£${v}`)} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} width={48} />
-        <Tooltip formatter={(v) => gbp(Number(v))} cursor={{ fill: "#f8fafc" }} />
-        <Legend wrapperStyle={{ fontSize: 11 }} iconSize={8} />
+    <div className="flex h-full flex-col">
+      <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
         {stages.map((s) => (
-          <Bar key={s} dataKey={s} name={STAGE_LABEL[s]} fill={STAGE_COLOR[s]} radius={[2, 2, 0, 0]} isAnimationActive={false} />
+          <li key={s} className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-[2px]" style={{ background: STAGE_COLOR[s] }} />
+            {STAGE_LABEL[s]}
+          </li>
         ))}
-      </BarChart>
-    </ResponsiveContainer>
+      </ul>
+      <div className="min-h-0 flex-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="28%">
+            <CartesianGrid vertical={false} stroke="#e2e7e3" />
+            <XAxis dataKey="option" tick={{ fontSize: 12, fill: "#17262a", fontWeight: 600 }} axisLine={{ stroke: "#cdd5d0" }} tickLine={false} />
+            <YAxis tickFormatter={k} tick={{ fontSize: 11, fill: "#5e6f6b" }} axisLine={false} tickLine={false} width={44} />
+            <Tooltip
+              formatter={(v, name) => [gbp(Number(v)), name]}
+              labelFormatter={(l) => `Option ${l}`}
+              cursor={{ fill: "#eef1ec" }}
+              contentStyle={{ borderRadius: 4, border: "1px solid #cdd5d0", fontSize: 12 }}
+            />
+            {stages.map((s, i) => (
+              <Bar
+                key={s}
+                dataKey={s}
+                stackId="cost"
+                name={STAGE_LABEL[s]}
+                fill={STAGE_COLOR[s]}
+                radius={i === stages.length - 1 ? [2, 2, 0, 0] : 0}
+                isAnimationActive={false}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 }
 
-/** Compact totals table, every figure clickable. */
-export function TotalsTable({ result }: { result: EngineResult }) {
+/** Totals table, every figure clickable. */
+export function TotalsTable({ result, best }: { result: EngineResult; best?: OptionId | null }) {
   const stages = STAGES.filter((s) => OPTIONS.some((o) => result.totals[o]?.[s] != null));
   return (
-    <table className="w-full text-xs">
+    <table className="w-full text-[13px]">
       <thead>
-        <tr className="text-left text-slate-400">
-          <th className="font-medium" />
+        <tr className="text-left text-[11px] text-muted">
+          <th className="pb-1.5 font-medium">Option</th>
           {stages.map((s) => (
-            <th key={s} className="pb-1 text-right font-medium">
-              {STAGE_LABEL[s]}
+            <th key={s} className={`pb-1.5 text-right font-medium ${s === "death" ? "text-faint" : ""}`}>
+              {SHORT[s]}
             </th>
           ))}
         </tr>
       </thead>
       <tbody>
         {OPTIONS.map((o) => (
-          <tr key={o} className="border-t border-slate-100">
-            <td className="py-1 font-medium">{o}</td>
+          <tr key={o} className="border-t border-rule-soft">
+            <td className={`py-1.5 font-bold ${o === best ? "text-edge" : ""}`}>{o}</td>
             {stages.map((s) => {
               const rows = result.rows.filter((r) => r.option === o && r.stage === s);
               return (
                 <td key={s} className="text-right">
                   {result.totals[o]?.[s] == null ? (
-                    <span className="text-slate-300">—</span>
+                    <span className="text-faint">—</span>
                   ) : (
-                    <CostMoney
-                      title={`Option ${o} · ${STAGE_LABEL[s]}`}
-                      rows={rows}
-                      amount={result.totals[o]?.[s]}
-                      className={s === "death" ? "text-slate-400" : ""}
-                    />
+                    <CostMoney title={`Option ${o}, ${STAGE_LABEL[s].toLowerCase()}`} rows={rows} amount={result.totals[o]?.[s]} className={s === "death" ? "text-faint" : ""} />
                   )}
                 </td>
               );
@@ -82,6 +103,7 @@ export function TotalsTable({ result }: { result: EngineResult }) {
     </table>
   );
 }
+const SHORT: Record<Stage, string> = { acquire: "Purchase", hold: "Yearly", exit: "Sale", ten_year: "10-year", death: "Death*" };
 
 /** Option D: "Pay £X now or £Y later". */
 export function OptionDTimeline({ result }: { result: EngineResult }) {
@@ -91,50 +113,54 @@ export function OptionDTimeline({ result }: { result: EngineResult }) {
   const death = rows("IHT_DEATH_COMPARATOR");
   const sum = (rs: CostRow[]) => rs.reduce((s, r) => s + r.amount_gbp, 0);
   if (entry.length + ten.length + death.length === 0) return null;
-  const k = (n: number) => (n >= 1000 ? `£${Math.round(n / 1000)}k` : gbp(n));
   const steps = [
-    { label: "Now · into trust", rows: entry, tone: "bg-purple-600" },
-    { label: "Every 10 years (max)", rows: ten, tone: "bg-purple-400" },
-    { label: "On death, held personally", rows: death, tone: "bg-slate-300", note: "comparator, not a cost of D" },
+    { label: "Now, into trust", rows: entry, tone: "bg-ink" },
+    { label: "Each 10 years, at most", rows: ten, tone: "bg-edge" },
+    { label: "On death, if held personally", rows: death, tone: "bg-rule", note: "Comparison only. Not a cost of D." },
   ];
   return (
     <div>
-      <p className="text-sm font-medium">
-        Pay {k(sum(entry))} now or {k(sum(death))} later
+      <p className="wide text-[18px] font-bold leading-tight tracking-tight">
+        Pay {k(sum(entry))} now, or {k(sum(death))} later
       </p>
-      <div className="mt-3 flex items-start gap-2">
+      <ol className="mt-4 grid grid-cols-3 gap-3">
         {steps.map((s, i) => (
-          <div key={i} className="flex-1">
-            <div className={`h-1.5 rounded ${s.tone}`} />
-            <p className="mt-1 text-[11px] text-slate-500">{s.label}</p>
-            <p className="text-sm font-semibold">
-              <CostMoney title={`Option D · ${s.label}`} rows={s.rows} />
+          <li key={i}>
+            <div className={`h-1 rounded-full ${s.tone}`} />
+            <p className="mt-2 text-[12px] leading-tight text-muted">{s.label}</p>
+            <p className="mt-0.5 text-[15px] font-semibold">
+              <CostMoney title={`Option D, ${s.label.toLowerCase()}`} rows={s.rows} />
             </p>
-            {s.note && <p className="text-[10px] text-slate-400">{s.note}</p>}
-          </div>
+            {s.note && <p className="mt-0.5 text-[11px] leading-tight text-faint">{s.note}</p>}
+          </li>
         ))}
-      </div>
+      </ol>
     </div>
   );
 }
 
 export function FlagList({ flags, option }: { flags: Flag[]; option: OptionId }) {
   const mine = flags.filter((f) => f.option === option);
-  if (mine.length === 0) return <p className="text-[11px] text-slate-400">No flags.</p>;
+  if (mine.length === 0) return null;
   return (
-    <ul className="space-y-1">
+    <ul className="space-y-1.5">
       {mine.map((f, i) => (
-        <li
-          key={`${f.rule_id}-${i}`}
-          className={`rounded px-2 py-1 text-[11px] leading-snug ${f.severity === "review" ? "bg-amber-50 text-amber-900" : "bg-slate-50 text-slate-600"}`}
-        >
-          <span className="mr-1 font-medium uppercase tracking-wide">{f.severity}</span>
-          {f.message}
-          {f.citation_url && (
-            <a href={f.citation_url} target="_blank" rel="noreferrer" className="ml-1 underline">
-              source
-            </a>
-          )}
+        <li key={`${f.rule_id}-${i}`} className="flex gap-2 text-[12px] leading-snug">
+          <span
+            className={`mt-[3px] h-fit shrink-0 rounded-full px-1.5 text-[10px] font-semibold ${
+              f.severity === "review" ? "bg-review-soft text-review" : "bg-paper text-muted"
+            }`}
+          >
+            {f.severity === "review" ? "Ask an adviser" : "Note"}
+          </span>
+          <span className="text-ink-soft">
+            {f.message}
+            {f.citation_url && (
+              <a href={f.citation_url} target="_blank" rel="noreferrer" className="ml-1 underline decoration-rule underline-offset-2 hover:decoration-ink">
+                Rule source
+              </a>
+            )}
+          </span>
         </li>
       ))}
     </ul>

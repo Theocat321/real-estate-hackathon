@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Property } from "@/contracts";
 import { SourcedMoney } from "@/components/SourceDrawer";
-import { SAMPLE, USE_FIXTURES, extract, match, savePacket, searchProperties } from "@/lib/api";
+import { Notice, UseTag } from "@/components/ui";
+import { SAMPLE, USE_FIXTURES, extract, gbp, match, savePacket, searchProperties } from "@/lib/api";
 
 export default function StartPage() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function StartPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function buildFromSeed(seed_id: string) {
-    setBusy(`Matching similar properties to ${seed_id}…`);
+    setBusy("Finding similar properties…");
     setError(null);
     try {
       const packet = await match({ seed_id, n: 5 });
@@ -48,71 +49,162 @@ export default function StartPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="text-3xl font-semibold tracking-tight">Which ownership structure fits this packet?</h1>
-      <p className="mt-2 text-slate-600">
-        Start from one UK property. We find 4–8 similar ones, draw four ownership structures, and cost each with cited UK tax rules.
-      </p>
+    <div className="grid gap-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16">
+      <div className="max-w-[640px]">
+        <h1 className="wide text-[40px] font-extrabold leading-[1.05] tracking-[-0.02em] sm:text-[52px]">
+          Who should own the building?
+        </h1>
+        <p className="mt-5 max-w-[56ch] text-[17px] leading-relaxed text-ink-soft">
+          Start from one UK property. Structure Studio finds similar lots, draws four ways to hold them, and costs each one
+          with the stamp duty, ATED and inheritance tax rules it applied, linked to the source.
+        </p>
 
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDrag(true);
-        }}
-        onDragLeave={() => setDrag(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDrag(false);
-          const f = e.dataTransfer.files[0];
-          if (f) void onFile(f);
-        }}
-        onClick={() => fileRef.current?.click()}
-        className={`mt-8 flex h-52 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed text-center transition ${
-          drag ? "border-accent bg-accent-soft" : "border-slate-300 hover:border-accent hover:bg-slate-50"
-        }`}
-      >
-        <p className="text-lg font-medium">Drop a sale brochure, listings CSV or investor list</p>
-        <p className="mt-1 text-sm text-slate-500">PDF or CSV · or click to choose a file</p>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".pdf,.csv,.txt"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Upload a brochure, listings CSV or investor list"
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && fileRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDrag(true);
+          }}
+          onDragLeave={() => setDrag(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDrag(false);
+            const f = e.dataTransfer.files[0];
             if (f) void onFile(f);
           }}
-        />
-      </div>
-
-      <div className="mt-4 flex items-center gap-3">
-        <button onClick={trySample} className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90">
-          Try sample packet
-        </button>
-        <span className="text-sm text-slate-500">Wireless House + 1 Briar Hill · two real Allsop lots</span>
-        {USE_FIXTURES && <span className="ml-auto rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-700">fixture mode</span>}
-      </div>
-
-      {busy && <p className="mt-4 text-sm text-slate-500">{busy}</p>}
-      {error && <p className="mt-4 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-      {warnings.length > 0 && (
-        <ul className="mt-4 space-y-1 rounded bg-amber-50 px-3 py-2 text-xs text-amber-800">
-          {warnings.map((w, i) => (
-            <li key={i}>{w}</li>
-          ))}
-        </ul>
-      )}
-      {extracted.length > 0 && (
-        <div className="mt-6">
-          <h2 className="text-sm font-medium text-slate-500">From your file — pick a seed property</h2>
-          <PropertyList properties={extracted} onPick={buildFromSeed} />
+          onClick={() => fileRef.current?.click()}
+          className={`mt-10 flex cursor-pointer items-center gap-5 rounded-md border bg-sheet px-6 py-7 transition-colors ${
+            drag ? "edged border-transparent bg-edge-soft" : "border-rule hover:border-ink"
+          }`}
+        >
+          <UploadGlyph />
+          <div>
+            <p className="text-[16px] font-semibold">Upload a sale brochure, listings CSV or investor list</p>
+            <p className="mt-0.5 text-[14px] text-muted">Drop a PDF or CSV here, or click to choose one.</p>
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".pdf,.csv,.txt"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void onFile(f);
+            }}
+          />
         </div>
-      )}
 
-      <Search onPick={buildFromSeed} />
+        <Search onPick={buildFromSeed} />
+
+        <div className="mt-4 space-y-3" aria-live="polite">
+          {busy && <p className="text-[14px] text-muted">{busy}</p>}
+          {error && <Notice tone="error">{error}</Notice>}
+          {warnings.length > 0 && (
+            <Notice tone="review">
+              <ul className="space-y-1">
+                {warnings.map((w, i) => (
+                  <li key={i}>{w}</li>
+                ))}
+              </ul>
+            </Notice>
+          )}
+        </div>
+
+        {extracted.length > 0 && (
+          <section className="mt-8">
+            <h2 className="text-[14px] font-semibold">Found in your file. Pick the property to start from.</h2>
+            <PropertyList properties={extracted} onPick={buildFromSeed} />
+          </section>
+        )}
+      </div>
+
+      <aside className="lg:pt-2">
+        <SampleDiagram onOpen={trySample} />
+        {USE_FIXTURES && (
+          <p className="mt-3 text-[12px] text-faint">Running on saved fixtures. Set NEXT_PUBLIC_USE_FIXTURES=false to use live data.</p>
+        )}
+      </aside>
     </div>
   );
 }
+
+function UploadGlyph() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true" className="shrink-0">
+      <rect x="8" y="4" width="24" height="32" rx="2" fill="var(--color-paper)" stroke="var(--color-ink)" strokeWidth="1.5" />
+      <path d="M13 12h14M13 17h14M13 22h9" stroke="var(--color-faint)" strokeWidth="1.5" />
+      <rect x="13" y="26" width="9" height="6" fill="none" stroke="var(--color-edge)" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+/** The sample packet's family-trust structure, drawn as the hero. */
+function SampleDiagram({ onOpen }: { onOpen: () => void }) {
+  const d = SAMPLE.structures.find((s) => s.option === "D");
+  const nodes = d?.nodes ?? [];
+  const tiers = [
+    nodes.filter((n) => n.kind === "investor"),
+    nodes.filter((n) => n.kind === "trust" || n.kind === "fund"),
+    nodes.filter((n) => n.kind === "company"),
+    nodes.filter((n) => n.kind === "property"),
+  ].filter((t) => t.length > 0);
+  const priceOf = (propertyId?: string) => SAMPLE.packet.items.find((p) => p.id === propertyId)?.price_gbp?.value;
+
+  return (
+    <figure className="overflow-hidden rounded-md border border-rule bg-sheet">
+      <div className="survey-grid px-6 pb-6 pt-7">
+        <div className="flex flex-col items-center">
+          {tiers.map((tier, ti) => (
+            <div key={ti} className="draw-step flex w-full flex-col items-center" style={{ animationDelay: `${ti * 140}ms` }}>
+              {ti > 0 && <span className="h-6 w-px bg-ink" aria-hidden="true" />}
+              <div className="flex w-full justify-center gap-3">
+                {tier.map((n) => {
+                  const isProp = n.kind === "property";
+                  const price = isProp ? priceOf(n.property_id) : undefined;
+                  return (
+                    <div
+                      key={n.id}
+                      className={`min-w-[140px] rounded-[3px] px-3.5 py-2.5 ${
+                        isProp ? "edged bg-sheet" : n.kind === "trust" ? "bg-ink text-sheet" : "border border-ink bg-sheet"
+                      }`}
+                    >
+                      <p className="text-[11px] text-current opacity-70">{KIND_NAME[n.kind]}</p>
+                      <p className="text-[14px] font-semibold leading-tight">{n.label}</p>
+                      {price != null && <p className="tabular mt-0.5 text-[13px] text-edge">{gbp(price)}</p>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <figcaption className="border-t border-rule px-6 py-5">
+        <p className="text-[15px] font-semibold">Sample: two Allsop auction lots, held through a family trust</p>
+        <p className="mt-1 text-[14px] leading-relaxed text-muted">
+          One of four structures Studio compares for this packet. Each £ figure opens the rule and source row behind it.
+        </p>
+        <button
+          onClick={onOpen}
+          className="mt-4 rounded-md bg-ink px-4 py-2.5 text-[14px] font-semibold text-sheet transition-colors hover:bg-ink-soft"
+        >
+          Open the sample packet
+        </button>
+      </figcaption>
+    </figure>
+  );
+}
+
+const KIND_NAME: Record<string, string> = {
+  investor: "Owner",
+  trust: "Trust",
+  fund: "Fund",
+  company: "Company",
+  property: "Property",
+};
 
 function Search({ onPick }: { onPick: (id: string) => void }) {
   const [q, setQ] = useState("");
@@ -136,18 +228,29 @@ function Search({ onPick }: { onPick: (id: string) => void }) {
   }, [q]);
 
   return (
-    <div className="mt-10">
-      <label className="text-sm font-medium text-slate-500" htmlFor="search">
-        Or search the hackathon data
+    <div className="mt-8">
+      <label className="text-[14px] font-semibold" htmlFor="search">
+        Or search 9,426 listings and auction results
       </label>
-      <input
-        id="search"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Address or postcode, e.g. BA3 or Milton Keynes"
-        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-accent"
-      />
-      {err && <p className="mt-2 text-sm text-red-700">{err}</p>}
+      <div className="relative mt-2">
+        <svg className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+          <circle cx="7" cy="7" r="5" fill="none" stroke="var(--color-muted)" strokeWidth="1.5" />
+          <path d="m11 11 3.5 3.5" stroke="var(--color-muted)" strokeWidth="1.5" />
+        </svg>
+        <input
+          id="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Address or postcode, like BA3 or Milton Keynes"
+          className="w-full rounded-md border border-rule bg-sheet py-3 pl-10 pr-3 text-[15px] outline-none placeholder:text-faint focus:border-ink"
+        />
+      </div>
+      {err && (
+        <div className="mt-2">
+          <Notice tone="error">{err}</Notice>
+        </div>
+      )}
+      {q.trim().length >= 2 && results.length === 0 && !err && <p className="mt-2 text-[13px] text-muted">No matches yet. Try a postcode area.</p>}
       <PropertyList properties={results} onPick={onPick} />
     </div>
   );
@@ -156,18 +259,22 @@ function Search({ onPick }: { onPick: (id: string) => void }) {
 function PropertyList({ properties, onPick }: { properties: Property[]; onPick: (id: string) => void }) {
   if (properties.length === 0) return null;
   return (
-    <ul className="mt-2 divide-y divide-slate-100 rounded-lg border border-slate-200">
+    <ul className="mt-2 divide-y divide-rule-soft overflow-hidden rounded-md border border-rule bg-sheet">
       {properties.map((p) => (
-        <li key={p.id} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50">
-          <button onClick={() => onPick(p.id)} className="flex-1 truncate text-left text-sm hover:text-accent">
-            {p.address}
+        <li key={p.id} className="group flex items-center gap-3 px-4 py-2.5 hover:bg-paper">
+          <button onClick={() => onPick(p.id)} className="min-w-0 flex-1 text-left">
+            <span className="block truncate text-[14px] font-medium">{p.address}</span>
+            <span className="text-[12px] text-muted">{p.property_type !== "unknown" ? p.property_type : p.use}</span>
           </button>
-          <span className="rounded bg-slate-100 px-1.5 text-xs text-slate-600">{p.use}</span>
-          <span className="w-24 text-right text-sm">
-            <SourcedMoney title={`Price · ${p.address}`} sourced={p.price_gbp} />
+          <UseTag use={p.use} />
+          <span className="w-28 text-right text-[14px]">
+            <SourcedMoney title={`Price, ${p.address}`} sourced={p.price_gbp} />
           </span>
-          <button onClick={() => onPick(p.id)} className="rounded bg-accent-soft px-2 py-0.5 text-xs text-accent">
-            Use as seed →
+          <button
+            onClick={() => onPick(p.id)}
+            className="rounded-md border border-ink px-2.5 py-1 text-[12px] font-semibold opacity-70 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+          >
+            Start here
           </button>
         </li>
       ))}
