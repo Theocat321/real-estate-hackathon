@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@theme {
+  --color-accent: #2f5bea;
+  --color-accent-soft: #eef2fe;
+}
+
+html, body { background: #fff; color: #0f172a; }
+body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+.tabular { font-variant-numeric: tabular-nums; }
