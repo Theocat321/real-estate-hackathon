@@ -4,8 +4,9 @@
  * Grok only writes each structure's `rationale` (max 2 sentences, no numbers); on any failure
  * we fall back to fixed template text, so /api/structures always answers.
  *
- * Node ids: properties p1..pn (packet order), PropCo "spv", owner in A/B "buyer",
- * C investors inv1..invk + "fund" (owns the properties), D "settlor" + "trust".
+ * Node ids: properties p1..pn (packet order), PropCo "spv", a single (or generic) owner in A/B "buyer",
+ * 2+ investors in A/B and C inv1..invk, C "fund" (owns the properties), D "settlor" + "trust"
+ * (+ non-family investors inv1..invk owning PropCo beside the trust).
  */
 import { z } from "zod";
 import type { Investor, InvestorType, OptionId, Packet, Property, StructEdge, StructNode, Structure } from "./contract";
@@ -60,21 +61,38 @@ export function buyerFor(investors: Investor[] = []): StructNode {
   return { id: BUYER.id, kind: "investor", label: inv.label, investor_type: inv.type, jurisdiction: jurisdictionOf(inv.type) };
 }
 
+function investorNode(inv: Investor, i: number): StructNode {
+  return { id: `inv${i + 1}`, kind: "investor", label: inv.label, investor_type: inv.type, jurisdiction: jurisdictionOf(inv.type) };
+}
+
+/** A: one investor (or none) buys as "buyer"; 2+ investors each own their pct of every property. */
 export function buildA(packet: Packet, investors: Investor[] = []): Structure {
   const props = propertyNodes(packet);
+  if (investors.length >= 2) {
+    const invNodes = investors.map(investorNode);
+    return {
+      option: "A",
+      name: OPTION_NAMES.A,
+      rationale: "",
+      nodes: [...invNodes, ...props],
+      edges: invNodes.flatMap((n, i) => props.map((p) => ({ from: n.id, to: p.id, pct: investors[i].pct }))),
+    };
+  }
   const buyer = buyerFor(investors);
   return { option: "A", name: OPTION_NAMES.A, rationale: "", nodes: [buyer, ...props], edges: ownsEach(buyer.id, props) };
 }
 
+/** B: one investor (or none) owns PropCo as "buyer"; 2+ investors each own their pct of PropCo. */
 export function buildB(packet: Packet, investors: Investor[] = []): Structure {
   const props = propertyNodes(packet);
-  const buyer = buyerFor(investors);
+  const owners = investors.length >= 2 ? investors.map(investorNode) : [buyerFor(investors)];
+  const pcts = investors.length >= 2 ? investors.map((i) => i.pct) : [100];
   return {
     option: "B",
     name: OPTION_NAMES.B,
     rationale: "",
-    nodes: [buyer, { ...SPV }, ...props],
-    edges: [{ from: buyer.id, to: SPV.id, pct: 100 }, ...ownsEach(SPV.id, props)],
+    nodes: [...owners, { ...SPV }, ...props],
+    edges: [...owners.map((n, i) => ({ from: n.id, to: SPV.id, pct: pcts[i] })), ...ownsEach(SPV.id, props)],
   };
 }
 
@@ -107,6 +125,10 @@ export function buildC(packet: Packet, investors: Investor[]): Structure {
   };
 }
 
+/**
+ * D: the family (or a generic family) settles the trust (pct 100 = settles, not a share);
+ * the trust holds the family's pct of PropCo, every other investor holds its own pct.
+ */
 export function buildD(packet: Packet, investors: Investor[]): Structure {
   const props = propertyNodes(packet);
   const fo = investors.find((i) => i.type === "family_office_uk" || i.type === "family_office_nonuk");
@@ -114,12 +136,19 @@ export function buildD(packet: Packet, investors: Investor[]): Structure {
     ? { id: "settlor", kind: "investor", label: `${fo.label} (settlor)`, investor_type: fo.type, jurisdiction: jurisdictionOf(fo.type) }
     : { id: "settlor", kind: "investor", label: "Family (settlor)", investor_type: "family_office_uk", jurisdiction: "UK" };
   const trust: StructNode = { id: "trust", kind: "trust", label: "Discretionary trust", trust_type: "discretionary", jurisdiction: "UK" };
+  const others = investors.filter((i) => i !== fo);
+  const otherNodes = others.map(investorNode);
   return {
     option: "D",
     name: OPTION_NAMES.D,
     rationale: "",
-    nodes: [settlor, trust, { ...SPV }, ...props],
-    edges: [{ from: settlor.id, to: trust.id, pct: 100 }, { from: trust.id, to: SPV.id, pct: 100 }, ...ownsEach(SPV.id, props)],
+    nodes: [settlor, trust, ...otherNodes, { ...SPV }, ...props],
+    edges: [
+      { from: settlor.id, to: trust.id, pct: 100 },
+      { from: trust.id, to: SPV.id, pct: fo ? fo.pct : 100 },
+      ...otherNodes.map((n, i) => ({ from: n.id, to: SPV.id, pct: others[i].pct })),
+      ...ownsEach(SPV.id, props),
+    ],
   };
 }
 

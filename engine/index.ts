@@ -48,15 +48,27 @@ const priceInput = (p: Priced): Input => ({ label: `${p.name} price`, value: p.p
 const ruleSource = (rule: RuleRef, excerpt: string): SourceRef => ({ kind: "rule", file: `engine/rules/${rule.id}.ts`, url: rule.citation_url, excerpt });
 const structureSource = (opt: OptionId, excerpt: string): SourceRef => ({ kind: "user", file: `structures[${opt}]`, excerpt });
 
-/** The node that acquires the properties: owner of the property nodes (A: investor, B/C/D: PropCo). */
-export function findBuyer(s: Structure): StructNode {
-  const propertyIds = new Set(s.nodes.filter((n) => n.kind === "property").map((n) => n.id));
-  const ownerId = s.edges.find((e) => propertyIds.has(e.to))?.from;
-  const owner = s.nodes.find((n) => n.id === ownerId);
-  if (owner) return owner;
+/**
+ * The nodes that acquire the properties: owners of the first property node, each with share = pct / 100
+ * (A: the investors, B/D: PropCo, C: the fund). Falls back to a single node with share 1.
+ */
+export function buyersOf(s: Structure): { node: StructNode; share: number }[] {
+  const first = s.nodes.find((n) => n.kind === "property");
+  const owners = first
+    ? s.edges.filter((e) => e.to === first.id).flatMap((e) => {
+        const node = s.nodes.find((n) => n.id === e.from);
+        return node ? [{ node, share: e.pct / 100 }] : [];
+      })
+    : [];
+  if (owners.length > 0) return owners;
   const fallback = s.nodes.find((n) => n.kind === (s.option === "A" ? "investor" : "company"));
   if (!fallback) throw new Error(`Structure ${s.option}: cannot identify the buyer node`);
-  return fallback;
+  return [{ node: fallback, share: 1 }];
+}
+
+/** The largest owner of the properties (first on a tie), for labels and single-node anchors. */
+export function findBuyer(s: Structure): StructNode {
+  return buyersOf(s).reduce((best, b) => (b.share > best.share ? b : best)).node;
 }
 
 /** Company for SDLT and ATED. A unit trust (fund) is treated as a company for both (FA 2003 s101; ATED covers collective investment schemes). */
@@ -109,13 +121,20 @@ export function runEngine(input: ScenarioInput): EngineResult {
 
   for (const s of input.structures) {
     const opt = s.option;
+    const buyers = buyersOf(s);
     const buyer = findBuyer(s);
-    const company = isCompany(buyer);
-    const nonUk = buyerIsNonUk(s, buyer);
+    const company = buyers.some((b) => isCompany(b.node));
+    const nonUkBuyer = buyers.find((b) => buyerIsNonUk(s, b.node))?.node;
+    const nonUk = nonUkBuyer !== undefined;
+    const buyerLabel = buyers.map((b) => (buyers.length > 1 ? `${b.node.label} (${Math.round(b.share * 100)}%)` : b.node.label)).join(" and ");
     const rentalRelief = input.assumptions?.rental_relief ?? false;
     const nodeFor = (p: Property) => s.nodes.find((n) => n.kind === "property" && n.property_id === p.id)?.id ?? buyer.id;
     const spv = s.nodes.find((n) => n.kind === "company") ?? buyer;
     const flag = (f: Omit<Flag, "option">) => flags.push({ option: opt, ...f });
+    const investorPct = input.investors.reduce((t, i) => t + i.pct, 0);
+    if (input.investors.length > 0 && investorPct !== 100) {
+      flag({ entity_id: buyer.id, rule_id: "investor_pct", severity: "review", message: `Investor shares add up to ${investorPct}%, not 100%.` });
+    }
     const row = (stage: Stage, tax: TaxCode, entity_id: string, amount_gbp: number, formula: string, inputs: Input[], rule: RuleRef) =>
       rows.push({ option: opt, stage, entity_id, tax, amount_gbp, formula, inputs, rule });
 
@@ -141,7 +160,7 @@ export function runEngine(input: ScenarioInput): EngineResult {
 
     for (const p of sdltProps.filter((p) => p.use !== "residential")) {
       const r = sdltNonRes(p.price);
-      row("acquire", "SDLT_NONRES", nodeFor(p), r.amount, `${p.name} (${p.use}), bought by ${buyer.label}: ${r.formula}`, [priceInput(p)], SDLT_NONRES_RULE);
+      row("acquire", "SDLT_NONRES", nodeFor(p), r.amount, `${p.name} (${p.use}), bought by ${buyerLabel}: ${r.formula}`, [priceInput(p)], SDLT_NONRES_RULE);
     }
 
     if (resProps.length > 0 && resDwellings >= NONRES_DWELLING_THRESHOLD) {
@@ -152,7 +171,7 @@ export function runEngine(input: ScenarioInput): EngineResult {
         "SDLT_NONRES",
         buyer.id,
         r.amount,
-        `${resDwellings} dwellings bought in one transaction by ${buyer.label} (${NONRES_DWELLING_THRESHOLD}+ treated as non-residential), on combined price: ${r.formula}`,
+        `${resDwellings} dwellings bought in one transaction by ${buyerLabel} (${NONRES_DWELLING_THRESHOLD}+ treated as non-residential), on combined price: ${r.formula}`,
         [
           ...resProps.map(priceInput),
           { label: "Dwellings in transaction", value: resDwellings, source: ruleSource(SDLT_NONRES_RULE, `Sum of dwellings across ${resProps.length} residential properties`) },
@@ -162,9 +181,9 @@ export function runEngine(input: ScenarioInput): EngineResult {
     } else {
       for (const p of resProps) {
         const r = sdltRes(p.price, dwellingsOf(p), company, nonUk, rentalRelief);
-        row("acquire", r.tax, nodeFor(p), r.amount, `${p.name}, bought by ${buyer.label}: ${r.formula}`, [
+        row("acquire", r.tax, nodeFor(p), r.amount, `${p.name}, bought by ${buyerLabel}: ${r.formula}`, [
           priceInput(p),
-          { label: "Buyer", value: `${buyer.label} (${company ? "company" : "not a company"})`, source: structureSource(opt, `buyer node ${buyer.id}`) },
+          { label: "Buyer", value: `${buyerLabel} (${company ? "company" : "not a company"})`, source: structureSource(opt, `buyer nodes ${buyers.map((b) => b.node.id).join(", ")}`) },
           {
             label: "Buyer residence for SDLT",
             value: nonUk ? "Non-UK (2% surcharge)" : "UK",
@@ -186,12 +205,12 @@ export function runEngine(input: ScenarioInput): EngineResult {
     }
 
     // ---- Investor-specific flags ----
-    if (nonUk && resProps.length > 0 && resDwellings < NONRES_DWELLING_THRESHOLD) {
+    if (nonUkBuyer && resProps.length > 0 && resDwellings < NONRES_DWELLING_THRESHOLD) {
       flag({
-        entity_id: buyer.id,
+        entity_id: nonUkBuyer.id,
         rule_id: "sdlt_non_uk_surcharge",
         severity: "info",
-        message: `${buyer.label} counts as non-UK for SDLT, so homes carry a 2% surcharge.`,
+        message: `${nonUkBuyer.label} counts as non-UK for SDLT, so homes carry a 2% surcharge.`,
         citation_url: CITE.sdltNonUk,
       });
     }
@@ -221,7 +240,7 @@ export function runEngine(input: ScenarioInput): EngineResult {
         if (dwellingsOf(p) === 0 || p.price / dwellingsOf(p) <= ATED_THRESHOLD) continue;
         const r = ated(p.price, dwellingsOf(p), rentalRelief);
         anyAted = true;
-        row("hold", "ATED", nodeFor(p), r.amount, `${p.name}, held by ${buyer.label} (annual): ${r.formula}`, [
+        row("hold", "ATED", nodeFor(p), r.amount, `${p.name}, held by ${buyerLabel} (annual): ${r.formula}`, [
           priceInput(p),
           { label: "Dwellings", value: dwellingsOf(p), source: p.priceSource },
         ], ATED_RULE);
@@ -238,10 +257,11 @@ export function runEngine(input: ScenarioInput): EngineResult {
         ...rents.map(({ p, r }) => ({ label: `${p.name} rent a year${r.estimated ? " (estimated)" : ""}`, value: r.value, source: r.source })),
         { label: "Taxable profit share of rent", value: `${PROFIT_SHARE_OF_RENT * 100}%`, source: { kind: "rule" as const, file: "engine/rules/rent.ts", excerpt: "Assumed running costs of 25% of rent; no loan interest" } },
       ];
-      for (const { node, share } of rentPayers(s, buyer.id)) {
+      for (const { node, share, via } of buyers.flatMap((b) => rentPayers(s, b.node.id, b.share).map((x) => ({ ...x, via: b.node })))) {
         const part = Math.round(profit * share);
-        const of = share < 1 ? ` (${Math.round(share * 100)}% share via ${buyer.label})` : "";
-        const inputs = share < 1 ? [...rentInputs, { label: `${node.label} share`, value: `${Math.round(share * 100)}%`, source: structureSource(opt, `edge into ${buyer.id}`) }] : rentInputs;
+        const of = share < 1 ? (node.id === via.id ? ` (${Math.round(share * 100)}% share)` : ` (${Math.round(share * 100)}% share via ${via.label})`) : "";
+        const edgeInto = node.id === via.id ? "the properties" : via.id;
+        const inputs = share < 1 ? [...rentInputs, { label: `${node.label} share`, value: `${Math.round(share * 100)}%`, source: structureSource(opt, `edge into ${edgeInto}`) }] : rentInputs;
         if (node.investor_type === "uk_pension") {
           row("hold", "CORP_TAX_RENT", node.id, 0, `${node.label}${of}: a registered pension scheme pays no tax on £${fmt(part)} rental profit = £0`, inputs, PENSION_EXEMPT_RULE);
           continue;
@@ -284,14 +304,23 @@ export function runEngine(input: ScenarioInput): EngineResult {
         input.settlor_nrb_available_gbp !== undefined
           ? { kind: "user", file: "scenario.settlor_nrb_available_gbp", excerpt: `Settlor nil-rate band available £${fmt(nrb)}` }
           : ruleSource(IHT_ENTRY_RULE, `Default nil-rate band £${fmt(DEFAULT_SETTLOR_NRB)}, assumed unused by gifts in the last 7 years`);
-      const ihtInputs: Input[] = [...allPriceInputs, { label: "Settlor nil-rate band available", value: nrb, source: nrbSource }];
+      // The trust's share of PropCo (settlor -> trust is "settles", not a share). Absent edge: the whole packet.
+      const trustEdge = s.edges.find((e) => e.from === trust.id && e.to === spv.id);
+      const trustPct = trustEdge?.pct ?? 100;
+      const base = Math.round((packetPrice * trustPct) / 100);
+      const shareText = trustPct === 100 ? "" : `${trustPct}% trust share of £${fmt(packetPrice)} = £${fmt(base)}; `;
+      const ihtInputs: Input[] = [
+        ...allPriceInputs,
+        { label: "Settlor nil-rate band available", value: nrb, source: nrbSource },
+        ...(trustPct === 100 ? [] : [{ label: `${trust.label} share of ${spv.label}`, value: `${trustPct}%`, source: structureSource(opt, `edge ${trust.id} -> ${spv.id}`) }]),
+      ];
 
-      const e = ihtEntry(packetPrice, nrb);
-      row("acquire", "IHT_ENTRY", trust.id, e.amount, `${settlor.label} settles PropCo into ${trust.label}: ${e.formula}`, ihtInputs, IHT_ENTRY_RULE);
-      const t = ihtTenYear(packetPrice, nrb);
-      row("ten_year", "IHT_TEN_YEAR", trust.id, t.amount, `${trust.label} at each 10-year anniversary: ${t.formula}`, ihtInputs, IHT_TEN_YEAR_RULE);
-      const d = ihtDeathComparator(packetPrice, nrb);
-      row("death", "IHT_DEATH_COMPARATOR", settlor.id, d.amount, d.formula, ihtInputs, IHT_DEATH_COMPARATOR_RULE);
+      const e = ihtEntry(base, nrb);
+      row("acquire", "IHT_ENTRY", trust.id, e.amount, `${settlor.label} settles PropCo into ${trust.label}: ${shareText}${e.formula}`, ihtInputs, IHT_ENTRY_RULE);
+      const t = ihtTenYear(base, nrb);
+      row("ten_year", "IHT_TEN_YEAR", trust.id, t.amount, `${trust.label} at each 10-year anniversary: ${shareText}${t.formula}`, ihtInputs, IHT_TEN_YEAR_RULE);
+      const d = ihtDeathComparator(base, nrb);
+      row("death", "IHT_DEATH_COMPARATOR", settlor.id, d.amount, `${shareText}${d.formula}`, ihtInputs, IHT_DEATH_COMPARATOR_RULE);
 
       const dFlag = (message: string, severity: Flag["severity"] = "review") =>
         flag({ entity_id: trust.id, rule_id: IHT_ENTRY_RULE.id, severity, message, citation_url: IHT_ENTRY_RULE.citation_url });

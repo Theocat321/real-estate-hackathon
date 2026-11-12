@@ -6,6 +6,8 @@ import { sdltRes } from "../rules/sdlt_res";
 import { ated } from "../rules/ated";
 import { stampDutyShares } from "../rules/stamp_duty_shares";
 import { POST } from "../../app/api/engine/route";
+import { buildA, buildB, buildD, buildStructureTemplates } from "@/agent/structures";
+import type { Investor, Packet } from "@/contracts";
 
 const scenario = ScenarioInputSchema.parse({
   packet: sample.packet,
@@ -119,7 +121,7 @@ describe("golden sample fixture", () => {
 
   it("settlor_nrb_available_gbp changes IHT base", () => {
     const r = runEngine({ ...scenario, settlor_nrb_available_gbp: 0 });
-    expect(r.totals.D.ten_year).toBe(84_300); // 1,405,000 x 6%
+    expect(r.totals.D.ten_year).toBe(33_720); // trust's 40% of 1,405,000 = 562,000 x 6%
   });
 });
 
@@ -303,5 +305,61 @@ describe("assumptions schema", () => {
   });
   it("parses with assumptions omitted", () => {
     expect(ScenarioInputSchema.safeParse(base).success).toBe(true);
+  });
+});
+
+describe("real investors in A, B and D", () => {
+  const packetOf = (items: Property[]): Packet => ({ id: "t", seed_id: items[0].id, items, totals: { price_gbp: 0, rent_pa_gbp: 0, blended_yield_pct: null, dwellings: 0 }, match_reason: "" });
+  const run = (items: Property[], investors: Investor[], structures: Structure[]) => runEngine({ packet: packetOf(items), investors, structures });
+
+  it("B with a 60% non-UK family office pays the 2% non-UK surcharge", () => {
+    const items = [resProperty("h", 400_000)];
+    const inv: Investor[] = [{ type: "family_office_nonuk", label: "Hart FO", pct: 60 }, { type: "uk_pension", label: "Pension", pct: 40 }];
+    const row = run(items, inv, [buildB(packetOf(items), inv)]).rows.find((r) => r.stage === "acquire")!;
+    expect(row.amount_gbp).toBe(sdltRes(400_000, 1, true, true).amount);
+    expect(row.amount_gbp).toBeGreaterThan(sdltRes(400_000, 1, true, false).amount);
+  });
+
+  it("A with a UK company and a family office owning half each pays the 17% rate", () => {
+    const items = [resProperty("h", 1_100_000)];
+    const inv: Investor[] = [{ type: "uk_company", label: "Co", pct: 50 }, { type: "family_office_uk", label: "FO", pct: 50 }];
+    const r = run(items, inv, [buildA(packetOf(items), inv)]);
+    const row = r.rows.find((x) => x.stage === "acquire")!;
+    expect(row).toMatchObject({ tax: "SDLT_RES_COMPANY_17", amount_gbp: 187_000 });
+    expect(row.formula).toContain("Co");
+    expect(row.formula).toContain("FO");
+    // ATED applies because one buyer is a company
+    expect(r.rows.some((x) => x.tax === "ATED" && x.amount_gbp === 9_450)).toBe(true);
+    // Rent is taxed on each owner's half: two rows
+    expect(r.rows.filter((x) => x.tax === "CORP_TAX_RENT").map((x) => x.entity_id)).toEqual(["inv1", "inv2"]);
+  });
+
+  it("D with family 70 / pension 30 bases trust IHT on 70% of the packet", () => {
+    const items = [resProperty("h", 1_000_000)];
+    const inv: Investor[] = [{ type: "family_office_uk", label: "FO", pct: 70 }, { type: "uk_pension", label: "Pension", pct: 30 }];
+    const rows = run(items, inv, [buildD(packetOf(items), inv)]).rows;
+    const entry = rows.find((x) => x.tax === "IHT_ENTRY")!;
+    // (1,000,000 x 70% = 700,000 - 325,000 NRB) x 20% = 75,000
+    expect(entry.amount_gbp).toBe(75_000);
+    expect(entry.formula).toContain("70%");
+    // ten-year: 375,000 x 6% = 22,500; death comparator: 375,000 x 40% = 150,000
+    expect(rows.find((x) => x.tax === "IHT_TEN_YEAR")!.amount_gbp).toBe(22_500);
+    expect(rows.find((x) => x.tax === "IHT_DEATH_COMPARATOR")!.amount_gbp).toBe(150_000);
+  });
+
+  it("investor shares not summing to 100 raise one investor_pct flag per option", () => {
+    const items = [resProperty("h", 400_000)];
+    const inv: Investor[] = [{ type: "uk_company", label: "Co", pct: 60 }, { type: "uk_pension", label: "Pension", pct: 30 }];
+    const flags = run(items, inv, buildStructureTemplates(packetOf(items), inv)).flags.filter((f) => f.rule_id === "investor_pct");
+    expect(flags.map((f) => f.option)).toEqual(["A", "B", "C", "D"]);
+    expect(flags[0]).toMatchObject({ severity: "review", message: "Investor shares add up to 90%, not 100%." });
+  });
+
+  it("no investors gives today's totals", () => {
+    const p = structuredClone(sample.packet) as Packet;
+    const t = runEngine({ packet: p, investors: [], structures: buildStructureTemplates(p, []) }).totals;
+    expect(t.A).toEqual({ acquire: 49_250, hold: 14_401 });
+    expect(t.B).toEqual({ acquire: 49_250, hold: 14_401, exit: 7_025 });
+    expect(t.D).toEqual({ acquire: 265_250, hold: 14_401, exit: 7_025, ten_year: 64_800, death: 432_000 });
   });
 });

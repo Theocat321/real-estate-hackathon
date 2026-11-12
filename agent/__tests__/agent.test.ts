@@ -8,7 +8,7 @@ import sample from "@/fixtures/sample.json";
 import type { Investor, Packet, Structure } from "@/agent/contract";
 import { brochureToProperty, extractUpload, normalisePcts, numbersIn, pdfPages, verifyCited } from "@/agent/extract";
 import { GrokCacheMiss, GrokInvalidResponse, grokJson, type Transport } from "@/agent/grok";
-import { buildStructures, buildStructureTemplates, FALLBACK_RATIONALE } from "@/agent/structures";
+import { buildA, buildB, buildD, buildStructures, buildStructureTemplates, FALLBACK_RATIONALE } from "@/agent/structures";
 import { makePdf } from "./helpers";
 
 const samplePacket = () => structuredClone(sample.packet) as Packet;
@@ -68,6 +68,25 @@ describe("structures (templates, not LLM)", () => {
   it("D settlor = family office investor if present, else Family (settlor)", () => {
     expect(buildStructureTemplates(samplePacket(), [UK_PENSION, FAMILY])[3].nodes[0]).toMatchObject({ id: "settlor", investor_type: "family_office_nonuk", label: "Hart Family Office (settlor)" });
     expect(buildStructureTemplates(samplePacket(), [{ ...UK_PENSION, pct: 100 }])[3].nodes[0]).toMatchObject({ id: "settlor", label: "Family (settlor)" });
+  });
+
+  it("B keeps each investor and their share of PropCo", () => {
+    const b = buildB(samplePacket(), [{ type: "uk_pension", label: "Pension", pct: 40 }, { type: "family_office_nonuk", label: "Hart FO", pct: 60 }]);
+    expect(shape(b).edges).toEqual(["inv1>spv:40", "inv2>spv:60", "spv>p1:100", "spv>p2:100"]);
+    expect(b.nodes.some((n) => n.id === "buyer")).toBe(false);
+  });
+
+  it("A with 2+ investors gives each investor its share of every property; none gives the generic Buyer", () => {
+    const a = buildA(samplePacket(), [{ type: "uk_company", label: "Co", pct: 50 }, { type: "family_office_uk", label: "FO", pct: 50 }]);
+    expect(shape(a).edges).toEqual(["inv1>p1:50", "inv1>p2:50", "inv2>p1:50", "inv2>p2:50"]);
+    expect(shape(buildA(samplePacket(), [])).edges).toEqual(["buyer>p1:100", "buyer>p2:100"]);
+  });
+
+  it("D: family settles the trust, trust holds the family's share, others hold theirs", () => {
+    const d = buildD(samplePacket(), [{ type: "family_office_uk", label: "FO", pct: 70 }, { type: "uk_pension", label: "Pension", pct: 30 }]);
+    expect(shape(d).edges).toEqual(["settlor>trust:100", "trust>spv:70", "inv1>spv:30", "spv>p1:100", "spv>p2:100"]);
+    const noFamily = buildD(samplePacket(), [{ type: "uk_pension", label: "Pension", pct: 100 }]);
+    expect(shape(noFamily).edges).toEqual(["settlor>trust:100", "trust>spv:100", "inv1>spv:100", "spv>p1:100", "spv>p2:100"]);
   });
 
   it("Grok writes only rationale; numbers rejected, falls back to template", async () => {

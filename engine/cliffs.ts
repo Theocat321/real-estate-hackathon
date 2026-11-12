@@ -9,7 +9,7 @@
  *  - two_nil_rate_bands: option D using two settlors' nil-rate bands instead of one
  */
 import type { CostRow, EngineResult, OptionId, Property, RuleRef, ScenarioInput, Stage, Structure } from "@/contracts";
-import { NONRES_DWELLING_THRESHOLD, findBuyer, runEngine, shortName } from "./index";
+import { NONRES_DWELLING_THRESHOLD, buyersOf, runEngine, shortName } from "./index";
 import { fmt } from "./money";
 import { ATED_BANDS_2026_27, ATED_RULE, ATED_THRESHOLD } from "./rules/ated";
 import { DEFAULT_SETTLOR_NRB } from "./rules/iht_base";
@@ -76,17 +76,17 @@ function bestOf(savings: Partial<Record<OptionId, StageSaving>>): Cliff["best"] 
   return best && best.acquire + best.hold + best.ten_year > 0 ? best : null;
 }
 
-/** Same structures, different items: replaces property nodes and hangs each item off the original buyer. */
+/** Same structures, different items: replaces property nodes and gives each item the first property's owners and pcts. */
 export function withItems(structures: Structure[], items: Property[]): Structure[] {
   return structures.map((s) => {
-    const buyer = findBuyer(s);
+    const owners = buyersOf(s).map((b) => ({ from: b.node.id, pct: Number((b.share * 100).toFixed(4)) }));
     const keep = s.nodes.filter((n) => n.kind !== "property");
     const props = items.map((p, i) => ({ id: `p${i + 1}`, kind: "property" as const, label: short(p), property_id: p.id }));
     const propIds = new Set(s.nodes.filter((n) => n.kind === "property").map((n) => n.id));
     return {
       ...s,
       nodes: [...keep, ...props],
-      edges: [...s.edges.filter((e) => !propIds.has(e.to)), ...props.map((n) => ({ from: buyer.id, to: n.id, pct: 100 }))],
+      edges: [...s.edges.filter((e) => !propIds.has(e.to)), ...props.flatMap((n) => owners.map((o) => ({ from: o.from, to: n.id, pct: o.pct })))],
     };
   });
 }

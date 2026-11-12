@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { OptionId, Property, ScenarioInput, Structure } from "@/contracts";
-import { findCliffs } from "../cliffs";
+import { findCliffs, withItems } from "../cliffs";
 
 function home(id: string, price: number, extra: Partial<Property> = {}): Property {
   return {
@@ -62,5 +62,21 @@ describe("tax-cliff finder", () => {
     const c = findCliffs(scenario([home("h1", 400_000), home("h2", 400_000)], ["D"])).find((x) => x.kind === "two_nil_rate_bands")!;
     // Entry 20% above NRB: (800k−325k)·20% = 95,000 vs (800k−650k)·20% = 30,000
     expect(c.savings.D!.acquire).toBe(65_000);
+  });
+});
+
+describe("withItems", () => {
+  it("copies the ownership pattern of the first property to every new item", () => {
+    const s: Structure = {
+      option: "A", name: "A", rationale: "",
+      nodes: [
+        { id: "inv1", kind: "investor", label: "Co", investor_type: "uk_company" },
+        { id: "inv2", kind: "investor", label: "FO", investor_type: "family_office_uk" },
+        { id: "p1", kind: "property", label: "h1", property_id: "h1" },
+      ],
+      edges: [{ from: "inv1", to: "p1", pct: 60 }, { from: "inv2", to: "p1", pct: 40 }],
+    };
+    const [out] = withItems([s], [home("x", 300_000), home("y", 300_000)]);
+    expect(out.edges.map((e) => `${e.from}>${e.to}:${e.pct}`)).toEqual(["inv1>p1:60", "inv2>p1:40", "inv1>p2:60", "inv2>p2:40"]);
   });
 });

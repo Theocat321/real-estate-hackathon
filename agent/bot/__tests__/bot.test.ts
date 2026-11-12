@@ -47,8 +47,8 @@ describe("build packet", () => {
     const reply = formatBuildReply(run);
     expect(reply).toContain("£1,405,000");
     expect(reply).toContain("A. Buy each property directly: £49,250 on purchase");
-    expect(reply).toContain("£265,250 on purchase");
-    expect(reply).toContain("£432,000 on death (comparator)");
+    expect(reply).toContain("£96,650 on purchase");
+    expect(reply).toContain("£94,800 on death (comparator)");
     expect(reply).toContain("https://studio.example/studio/pkt-sample-commercial");
     expect(reply).toContain("not tax advice");
   });
@@ -64,17 +64,17 @@ describe("explain option", () => {
   it("figure check: exact and shorthand", async () => {
     const allowed = allowedAmounts(await runP, "D");
     expect(poundsIn("£216k now or £432,000 later")).toEqual([{ value: 216000, step: 1000 }, { value: 432000, step: 0 }]);
-    expect(quotesOnly("Pay £216k now or £432,000 later; packet £1.4m", allowed)).toBe(true);
+    expect(quotesOnly("Pay £47,400 now or £94,800 later; packet £1.4m", allowed)).toBe(true);
     expect(quotesOnly("Saves £215,750 overall", allowed)).toBe(false);
     expect(quotesOnly("about £220k", allowed)).toBe(false);
   });
 
   it("accepts Grok prose that only quotes engine figures", async () => {
     const run = await runP;
-    const transport = async () => JSON.stringify({ text: "The trust pays £216,000 on entry and up to £64,800 every ten years, versus £432,000 if the family held personally." });
+    const transport = async () => JSON.stringify({ text: "The trust pays £47,400 on entry and up to £14,220 every ten years, versus £94,800 if the family held personally." });
     const r = await explainOption(run, "D", transport);
     expect(r.source).toBe("grok");
-    expect(r.text).toContain("£216,000");
+    expect(r.text).toContain("£47,400");
   });
 
   it("rejects Grok prose with an invented figure and falls back to engine rows", async () => {
@@ -84,7 +84,7 @@ describe("explain option", () => {
     expect(r.source).toBe("template");
     expect(r.warning).toMatch(/not in the engine output/);
     expect(r.text).toBe(templateExplanation(run, "D"));
-    expect(r.text).toContain("IHT ENTRY £216,000");
+    expect(r.text).toContain("IHT ENTRY £47,400");
     expect(r.text).toContain("[review]");
   });
 
