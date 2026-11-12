@@ -54,3 +54,14 @@ describe("packet optimiser", () => {
     console.log(`12-lot pool: ${r.engine_runs} engine runs in ${Math.round(ms)} ms; best ${r.best.groups.map((g) => `${g.option}×${g.item_ids.length}`).join(" + ")} at ${r.best.rate_pct.toFixed(2)}%`);
   });
 });
+
+describe("optimiser assumptions", () => {
+  it("prices a £1.1m lot lower with rental relief on", () => {
+    const lot = [home("big", 1_100_000)];
+    // Every option is priced as the company structure (B), so the 17% rate is what the relief switch changes.
+    const onlyB: StructureBuilder = (items, o, inv) => ({ ...build(items, "B", inv), option: o });
+    const run = (rental_relief: boolean) =>
+      optimise(lot, [], pension, onlyB, { sameSeller: false, keepAll: true, minLots: 1, maxLots: 1, assumptions: { rental_relief } });
+    expect(run(true).best.cost).toBeLessThan(run(false).best.cost);
+  });
+});

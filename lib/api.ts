@@ -4,6 +4,7 @@
  * Always live: every call goes to its route handler.
  */
 import type {
+  Assumptions,
   EngineResult,
   ExportRequest,
   ExtractResponse,
@@ -97,6 +98,7 @@ export async function optimisePacket(req: {
   investors: Investor[];
   same_seller: boolean;
   keep_all: boolean;
+  assumptions?: Assumptions;
 }): Promise<OptimiseResult & { candidates: Property[] }> {
   return postJson("/api/optimise", req);
 }

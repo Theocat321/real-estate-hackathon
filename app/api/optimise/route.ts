@@ -1,9 +1,12 @@
-import type { Investor, OptionId, Packet, Property } from "@/contracts";
+import { z } from "zod";
+import type { Assumptions, Investor, OptionId, Packet, Property } from "@/contracts";
 import { optimise, type StructureBuilder } from "@/engine/optimise";
 import { buildA, buildB, buildC, buildD } from "@/agent/structures";
 import { matchCandidates } from "@/lib/db";
 
 export const runtime = "nodejs";
+
+const AssumptionsSchema = z.object({ rental_relief: z.boolean().optional(), distribute_profits: z.boolean().optional() });
 
 const BUILD: Record<OptionId, (p: Packet, inv: Investor[]) => ReturnType<typeof buildA>> = {
   A: (p, inv) => buildA(p, inv),
@@ -33,12 +36,13 @@ function rank(items: Property[], pool: Property[], k: number): Property[] {
 
 /** POST /api/optimise { packet, investors, same_seller, keep_all } → OptimiseResult */
 export async function POST(req: Request): Promise<Response> {
-  let body: { packet: Packet; investors?: Investor[]; same_seller?: boolean; keep_all?: boolean };
+  let body: { packet: Packet; investors?: Investor[]; same_seller?: boolean; keep_all?: boolean; assumptions?: Assumptions };
   try {
     body = await req.json();
     if (!body?.packet?.items?.length) throw new Error();
+    if (body.assumptions !== undefined) body.assumptions = AssumptionsSchema.parse(body.assumptions);
   } catch {
-    return Response.json({ error: "Body must be { packet, investors?, same_seller?, keep_all? }" }, { status: 400 });
+    return Response.json({ error: "Body must be { packet, investors?, same_seller?, keep_all?, assumptions? }" }, { status: 400 });
   }
   const items = body.packet.items.slice(0, 8);
   const seed = items[0];
@@ -47,6 +51,7 @@ export async function POST(req: Request): Promise<Response> {
     const result = optimise(items, candidates, body.investors ?? [], builder, {
       sameSeller: !!body.same_seller,
       keepAll: body.keep_all !== false,
+      assumptions: body.assumptions,
     });
     return Response.json({ ...result, candidates });
   } catch (e) {

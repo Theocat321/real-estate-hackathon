@@ -11,7 +11,7 @@
  *    Exit costs are excluded: a share sale also saves the next buyer SDLT, which the engine doesn't model.
  *    Structure set-up and running fees are not included.
  */
-import type { Investor, OptionId, Property, ScenarioInput, Structure } from "@/contracts";
+import type { Assumptions, Investor, OptionId, Property, ScenarioInput, Structure } from "@/contracts";
 import { runEngine } from "./index";
 
 export type StructureBuilder = (items: Property[], option: OptionId, investors: Investor[]) => Structure;
@@ -41,6 +41,8 @@ export interface OptimiseOptions {
   minLots?: number;
   maxLots?: number;
   maxGroups?: number;
+  /** Tax assumptions (e.g. rental_relief) passed to every priced scenario. */
+  assumptions?: Assumptions;
 }
 
 export interface OptimiseResult {
@@ -91,6 +93,7 @@ export function optimise(
     packet: { id: "opt", seed_id: lots[0].id, items: lots, totals: { price_gbp: 0, rent_pa_gbp: 0, blended_yield_pct: null, dwellings: 0 }, match_reason: "" },
     structures: [build(lots, option, investors)],
     investors,
+    ...(opts.assumptions ? { assumptions: opts.assumptions } : {}),
   });
   const sdltOf = (r: ReturnType<typeof runEngine>, o: OptionId) =>
     r.rows.filter((x) => x.option === o && x.stage === "acquire" && x.tax.startsWith("SDLT")).reduce((s, x) => s + x.amount_gbp, 0);
