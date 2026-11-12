@@ -38,6 +38,8 @@ export default function PacketPage() {
 
   const seed = packet.items.find((p) => p.id === packet.seed_id) ?? packet.items[0];
   const base = baseOf(packet.id);
+  const homesRes = packet.items.filter((p) => p.use === "residential").reduce((n, p) => n + Math.max(1, p.dwellings), 0);
+  const homesMixed = packet.items.filter((p) => p.use === "mixed").reduce((n, p) => n + p.dwellings, 0);
 
   function applyPlan(items: Property[], plan: OptimiseResult, preset: InvestorPreset) {
     if (!packet) return;
@@ -163,27 +165,39 @@ export default function PacketPage() {
               parts={parts(packet.items, (p) => p.price_gbp)}
             />
           </p>
-          <dl className="mt-5 space-y-2.5 border-t border-rule-soft pt-4 text-[14px]">
-            <Row label="Rent a year">
-              <PartsMoney
-                title="Packet rent a year"
-                display={gbp(packet.totals.rent_pa_gbp)}
-                note="Sum of passing rent where the source data states it."
-                parts={parts(packet.items, (p) => p.rent_pa_gbp)}
-              />
-            </Row>
-            <Row label="Blended yield">
-              <PartsMoney
-                title="Blended yield"
-                display={packet.totals.blended_yield_pct == null ? "—" : `${packet.totals.blended_yield_pct.toFixed(2)}%`}
-                note="Total rent ÷ total price × 100, using only lots where both are known."
-                parts={[...parts(packet.items, (p) => p.rent_pa_gbp), ...parts(packet.items, (p) => p.price_gbp)]}
-              />
-            </Row>
-            <Row label="Homes">
-              <span className="tabular">{packet.totals.dwellings}</span>
-            </Row>
-          </dl>
+          <p className="mt-2 text-[13px] text-muted">{mix(packet.items)}</p>
+          {(homesRes > 0 || homesMixed > 0 || packet.totals.rent_pa_gbp > 0) && (
+            <dl className="mt-4 space-y-2 border-t border-rule-soft pt-3 text-[14px]">
+              {(homesRes > 0 || homesMixed > 0) && (
+                <Row label="Homes">
+                  <span className="tabular">
+                    {homesRes}
+                    {homesMixed > 0 && <span className="font-normal text-muted"> + {homesMixed} in mixed use</span>}
+                  </span>
+                </Row>
+              )}
+              {packet.totals.rent_pa_gbp > 0 && (
+                <Row label="Rent a year">
+                  <PartsMoney
+                    title="Packet rent a year"
+                    display={gbp(packet.totals.rent_pa_gbp)}
+                    note="Sum of passing rent where the source data states it."
+                    parts={parts(packet.items, (p) => p.rent_pa_gbp)}
+                  />
+                </Row>
+              )}
+              {packet.totals.blended_yield_pct != null && (
+                <Row label="Blended yield">
+                  <PartsMoney
+                    title="Blended yield"
+                    display={`${packet.totals.blended_yield_pct.toFixed(2)}%`}
+                    note="Total rent ÷ total price × 100, using only lots where both are known."
+                    parts={[...parts(packet.items, (p) => p.rent_pa_gbp), ...parts(packet.items, (p) => p.price_gbp)]}
+                  />
+                </Row>
+              )}
+            </dl>
+          )}
         </section>
 
         <OptimisePanel packet={packet} onApply={applyPlan} />
@@ -206,6 +220,17 @@ export default function PacketPage() {
 }
 
 const NATION = { england: "England", wales: "Wales", scotland: "Scotland", ni: "Northern Ireland" } as const;
+/** "2 residential, 1 commercial, 1 mixed use" */
+function mix(items: Property[]): string {
+  const n = { residential: 0, commercial: 0, mixed: 0 };
+  for (const p of items) n[p.use]++;
+  return (
+    [n.residential && `${n.residential} residential`, n.commercial && `${n.commercial} commercial`, n.mixed && `${n.mixed} mixed use`]
+      .filter(Boolean)
+      .join(", ") + ` ${items.length === 1 ? "lot" : "lots"}`
+  );
+}
+
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 function priceLabel(p: Property): string {
