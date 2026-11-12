@@ -38,6 +38,7 @@ describe("tax-cliff finder", () => {
     const cliffs = findCliffs(scenario([home("h1", 520_000), home("h2", 300_000)]));
     const c = cliffs.find((x) => x.kind === "price_threshold")!;
     expect(c.title).toContain("£500,000");
+    expect(c.detail).toContain("unless rental-business relief is claimed");
     // B: 17% of 520k = 88,400 vs higher rates on 500k = 40,000 → 48,400 SDLT, plus £4,600 ATED a year
     expect(c.savings.B).toEqual({ acquire: 48_400, hold: 4_600, ten_year: 0 });
     expect(c.best.option).toMatch(/B|D/);

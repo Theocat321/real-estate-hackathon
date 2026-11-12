@@ -9,10 +9,10 @@ export const IHT_TEN_YEAR_RULE: RuleRef = {
   as_of: AS_OF,
 };
 
-export function ihtTenYear(packetPrice: number, nrb: number): { amount: number; formula: string } {
+export function ihtTenYear(packetPrice: number, nrb: number, label?: string): { amount: number; formula: string } {
   const amount = Math.floor((ihtBase(packetPrice, nrb) * 6) / 100);
   return {
     amount,
-    formula: `${ihtBaseText(packetPrice, nrb)}; x 6% = £${fmt(amount)} (maximum rate; reliefs and time-apportionment usually make it lower)`,
+    formula: `${ihtBaseText(packetPrice, nrb, label)}; x 6% = £${fmt(amount)} (maximum rate; reliefs and time-apportionment usually make it lower)`,
   };
 }

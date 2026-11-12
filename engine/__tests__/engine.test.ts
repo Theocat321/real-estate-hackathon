@@ -52,6 +52,10 @@ function scenarioWith(items: Property[], options: OptionId[] = ["B"]): ScenarioI
 }
 
 describe("golden sample fixture", () => {
+  it("is on the current contract version", () => {
+    expect(sample.contract_version).toBe(CONTRACT_VERSION);
+  });
+
   const result = runEngine(scenario);
 
   it("per-lot SDLT in every option", () => {
@@ -249,6 +253,17 @@ describe("non-UK resident SDLT surcharge", () => {
     expect(sdltOf(withOwner("B", null)).amount_gbp).toBe(sdltRes(400_000, 1, true, false).amount);
   });
 
+  it("£1.1m dwelling, non-UK company buyer, relief on -> higher rates plus 2% = 130,750, citing the relief page", () => {
+    // Higher rates on £1.1m = 108,750 (17% disapplied); +2% non-UK surcharge on 1,100,000 = 22,000
+    const sc = { ...withOwner("B", nonUkOwner), assumptions: { rental_relief: true } };
+    sc.packet.items = [resProperty("h1", 1_100_000)];
+    sc.structures[0].nodes = sc.structures[0].nodes.map((n) => (n.kind === "property" ? { ...n, property_id: "h1" } : n));
+    const row = sdltOf(sc);
+    expect(row).toMatchObject({ tax: "SDLT_RES_HIGHER", amount_gbp: 130_750 });
+    expect(row.rule.citation_url).toBe("https://www.gov.uk/guidance/stamp-duty-land-tax-corporate-bodies");
+    expect(row.inputs.find((i) => i.label === "Buyer residence for SDLT")!.source.url).toContain("non-uk-residents");
+  });
+
   it("does not surcharge commercial property", () => {
     const shop = resProperty("s1", 400_000, { use: "commercial", dwellings: 0 });
     const sc = scenarioWith([shop], ["A"]);
@@ -334,8 +349,10 @@ describe("real investors in A, B and D", () => {
     expect(row).toMatchObject({ tax: "SDLT_RES_COMPANY_17", amount_gbp: 187_000 });
     expect(row.formula).toContain("Co");
     expect(row.formula).toContain("FO");
-    // ATED applies because one buyer is a company
-    expect(r.rows.some((x) => x.tax === "ATED" && x.amount_gbp === 9_450)).toBe(true);
+    // ATED applies because one buyer is a company, on the whole dwelling
+    const atedRow = r.rows.find((x) => x.tax === "ATED")!;
+    expect(atedRow.amount_gbp).toBe(9_450);
+    expect(atedRow.formula).toContain("Co is chargeable on the whole dwelling");
     // Rent is taxed on each owner's half: corporation tax for the company, income tax for the family office
     expect(r.rows.filter((x) => x.tax === "CORP_TAX_RENT").map((x) => x.entity_id)).toEqual(["inv1"]);
     expect(r.rows.filter((x) => x.tax === "INCOME_TAX_RENT").map((x) => x.entity_id)).toEqual(["inv2"]);
@@ -349,6 +366,11 @@ describe("real investors in A, B and D", () => {
     // (1,000,000 x 70% = 700,000 - 325,000 NRB) x 20% = 75,000
     expect(entry.amount_gbp).toBe(75_000);
     expect(entry.formula).toContain("70%");
+    for (const tax of ["IHT_ENTRY", "IHT_TEN_YEAR", "IHT_DEATH_COMPARATOR"]) {
+      const f = rows.find((x) => x.tax === tax)!.formula;
+      expect(f).toContain("£700,000 family's share");
+      expect(f).not.toContain("£700,000 packet price");
+    }
     // ten-year: 375,000 x 6% = 22,500; death comparator: 375,000 x 40% = 150,000
     expect(rows.find((x) => x.tax === "IHT_TEN_YEAR")!.amount_gbp).toBe(22_500);
     expect(rows.find((x) => x.tax === "IHT_DEATH_COMPARATOR")!.amount_gbp).toBe(150_000);

@@ -9,7 +9,7 @@ export const IHT_ENTRY_RULE: RuleRef = {
   as_of: AS_OF,
 };
 
-export function ihtEntry(packetPrice: number, nrb: number): { amount: number; formula: string } {
+export function ihtEntry(packetPrice: number, nrb: number, label?: string): { amount: number; formula: string } {
   const amount = Math.floor((ihtBase(packetPrice, nrb) * 20) / 100);
-  return { amount, formula: `${ihtBaseText(packetPrice, nrb)}; x 20% = £${fmt(amount)}` };
+  return { amount, formula: `${ihtBaseText(packetPrice, nrb, label)}; x 20% = £${fmt(amount)}` };
 }

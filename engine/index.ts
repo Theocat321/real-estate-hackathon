@@ -221,7 +221,8 @@ export function runEngine(input: ScenarioInput): EngineResult {
             value: nonUk ? "Non-UK (2% surcharge)" : "UK",
             source: { kind: "rule", file: "engine/index.ts#buyerIsNonUk", url: CITE.sdltNonUk, excerpt: "Non-UK buyer, or UK company controlled from outside the UK" },
           },
-        ], nonUk ? { ...SDLT_RES_RULE, citation_url: CITE.sdltNonUk } : r.relieved17 ? { ...SDLT_RES_RULE, citation_url: CITE.sdltCorporate } : SDLT_RES_RULE);
+        // Relief and non-UK together: cite the relief page; the non-UK page stays on the buyer residence input.
+        ], r.relieved17 ? { ...SDLT_RES_RULE, citation_url: CITE.sdltCorporate } : nonUk ? { ...SDLT_RES_RULE, citation_url: CITE.sdltNonUk } : SDLT_RES_RULE);
         if (r.tax === "SDLT_RES_COMPANY_17" || r.relieved17) {
           flag({
             entity_id: nodeFor(p),
@@ -268,11 +269,15 @@ export function runEngine(input: ScenarioInput): EngineResult {
     // ---- ATED (hold, annual) ----
     if (company) {
       let anyAted = false;
+      // Joint ownership with a company: the company is chargeable on the whole dwelling, not just its share.
+      const companyOwners = buyers.filter((b) => isCompany(b.node)).map((b) => b.node.label);
+      const wholeDwelling =
+        buyers.length > 1 ? `; ${companyOwners.join(" and ")} ${companyOwners.length > 1 ? "are" : "is"} chargeable on the whole dwelling, not just its share` : "";
       for (const p of priced.filter((p) => p.use === "residential")) {
         if (dwellingsOf(p) === 0 || p.price / dwellingsOf(p) <= ATED_THRESHOLD) continue;
         const r = ated(p.price, dwellingsOf(p), rentalRelief);
         anyAted = true;
-        row("hold", "ATED", nodeFor(p), r.amount, `${p.name}, held by ${buyerLabel} (annual): ${r.formula}`, [
+        row("hold", "ATED", nodeFor(p), r.amount, `${p.name}, held by ${buyerLabel} (annual): ${r.formula}${wholeDwelling}`, [
           priceInput(p),
           { label: "Dwellings", value: dwellingsOf(p), source: p.priceSource },
         ], ATED_RULE);
@@ -309,6 +314,7 @@ export function runEngine(input: ScenarioInput): EngineResult {
         const ctInputs = assoc > 0 ? [...inputs, { label: "Associated companies", value: assoc, source: structureSource(opt, `companies controlled with ${node.id}`) }] : inputs;
         row("hold", "CORP_TAX_RENT", node.id, t.amount, `${node.label}${of}, on £${fmt(rent)} rent less 25% costs: ${t.formula}`, ctInputs, CORP_TAX_RULE);
         // Profits paid out: what is left after corporation tax goes to the company's owners as dividends.
+        // A company investor paying corporation tax directly (option A) has no owner above it, so it gets no dividend rows.
         if (distribute) {
           const paidOut = part - t.amount;
           for (const e of s.edges.filter((e) => e.to === node.id)) {
@@ -376,11 +382,12 @@ export function runEngine(input: ScenarioInput): EngineResult {
         ...(trustPct === 100 ? [] : [{ label: `${trust.label} share of ${spv.label}`, value: `${trustPct}%`, source: structureSource(opt, `edge ${trust.id} -> ${spv.id}`) }]),
       ];
 
-      const e = ihtEntry(base, nrb);
+      const baseLabel = trustPct === 100 ? "packet price" : "family's share";
+      const e = ihtEntry(base, nrb, baseLabel);
       row("acquire", "IHT_ENTRY", trust.id, e.amount, `${settlor.label} settles PropCo into ${trust.label}: ${shareText}${e.formula}`, ihtInputs, IHT_ENTRY_RULE);
-      const t = ihtTenYear(base, nrb);
+      const t = ihtTenYear(base, nrb, baseLabel);
       row("ten_year", "IHT_TEN_YEAR", trust.id, t.amount, `${trust.label} at each 10-year anniversary: ${shareText}${t.formula}`, ihtInputs, IHT_TEN_YEAR_RULE);
-      const d = ihtDeathComparator(base, nrb);
+      const d = ihtDeathComparator(base, nrb, baseLabel);
       row("death", "IHT_DEATH_COMPARATOR", settlor.id, d.amount, `${shareText}${d.formula}`, ihtInputs, IHT_DEATH_COMPARATOR_RULE);
 
       const dFlag = (message: string, severity: Flag["severity"] = "review") =>

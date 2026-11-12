@@ -10,10 +10,10 @@ export const IHT_DEATH_COMPARATOR_RULE: RuleRef = {
 };
 
 /** What the family would pay holding personally. A comparator, not a cost of option D. */
-export function ihtDeathComparator(packetPrice: number, nrb: number): { amount: number; formula: string } {
+export function ihtDeathComparator(packetPrice: number, nrb: number, label?: string): { amount: number; formula: string } {
   const amount = Math.floor((ihtBase(packetPrice, nrb) * 40) / 100);
   return {
     amount,
-    formula: `${ihtBaseText(packetPrice, nrb)}; x 40% = £${fmt(amount)} (comparator: IHT if the family held personally; not a cost of D)`,
+    formula: `${ihtBaseText(packetPrice, nrb, label)}; x 40% = £${fmt(amount)} (comparator: IHT on the family's share if held personally; not a cost of D)`,
   };
 }

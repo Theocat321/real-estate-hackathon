@@ -9,9 +9,9 @@ export const CITE = {
   /** FA 2004 s186: registered pension schemes are exempt from income tax on investment income. */
   pensionExempt: "https://www.legislation.gov.uk/ukpga/2004/12/section/186",
   ated: "https://www.gov.uk/guidance/annual-tax-on-enveloped-dwellings-the-basics",
-  /** 2% surcharge on residential SDLT for non-UK resident buyers, incl. UK close companies controlled by non-residents. */
   /** SDLT corporate bodies: 17% rate relief for property-rental businesses. */
   sdltCorporate: "https://www.gov.uk/guidance/stamp-duty-land-tax-corporate-bodies",
+  /** 2% surcharge on residential SDLT for non-UK resident buyers, incl. UK close companies controlled by non-residents. */
   sdltNonUk: "https://www.gov.uk/guidance/rates-of-stamp-duty-land-tax-for-non-uk-residents",
   /** Non-UK residents pay UK tax on gains from UK land, including indirect disposals. */
   nrcgt: "https://www.gov.uk/guidance/capital-gains-tax-for-non-residents-uk-residential-property",

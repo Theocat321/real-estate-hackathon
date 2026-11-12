@@ -104,7 +104,7 @@ function scenario(input: ScenarioInput, items: Property[], extra: Partial<Scenar
 
 function priceThresholds(): { at: number; why: string; rule: RuleRef }[] {
   return [
-    { at: COMPANY_17_THRESHOLD, why: `homes over £${fmt(COMPANY_17_THRESHOLD)} bought by a company pay a flat 17% SDLT, and enter ATED`, rule: SDLT_RES_RULE },
+    { at: COMPANY_17_THRESHOLD, why: `homes over £${fmt(COMPANY_17_THRESHOLD)} bought by a company pay a flat 17% SDLT and enter ATED, unless rental-business relief is claimed`, rule: SDLT_RES_RULE },
     ...ATED_BANDS_2026_27.slice(0, -1).map((b) => ({ at: b.upTo, why: `the next ATED band starts above £${fmt(b.upTo)}`, rule: ATED_RULE })),
   ].filter((t, i, all) => all.findIndex((x) => x.at === t.at) === i && t.at >= ATED_THRESHOLD);
 }
