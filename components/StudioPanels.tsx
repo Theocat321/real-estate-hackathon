@@ -4,7 +4,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import type { CostRow, EngineResult, Flag, OptionId, Stage } from "@/contracts";
 import { CostMoney } from "@/components/SourceDrawer";
 import { OPTIONS, gbp } from "@/lib/api";
-import { HORIZON_LABEL, breakdown, type Breakdown, type Horizon } from "@/lib/horizon";
+import { HORIZON_LABEL, breakdown, saleSaving, type Breakdown, type Horizon } from "@/lib/horizon";
 
 export const STAGE_LABEL: Record<Stage, string> = {
   acquire: "On purchase",
@@ -119,6 +119,66 @@ export function TotalsTable({
             <td className={`tabular text-right font-semibold ${o === best ? "text-edge" : ""}`}>{gbp(b[o].total)}</td>
           </tr>
         ))}
+      </tbody>
+    </table>
+  );
+}
+
+/** Bar per option: stamp duty the next buyer saves when the packet is sold through it. */
+export function SaleChart({ result }: { result: EngineResult }) {
+  const data = OPTIONS.map((o) => ({ option: o, saving: saleSaving(result, o).saving }));
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="28%">
+        <CartesianGrid vertical={false} stroke="#e2e7e3" />
+        <XAxis dataKey="option" tick={{ fontSize: 12, fill: "#17262a", fontWeight: 600 }} axisLine={{ stroke: "#cdd5d0" }} tickLine={false} />
+        <YAxis tickFormatter={k} tick={{ fontSize: 11, fill: "#5e6f6b" }} axisLine={false} tickLine={false} width={44} />
+        <Tooltip
+          formatter={(v) => [gbp(Number(v)), "Saved on sale"]}
+          labelFormatter={(l) => `Option ${l}`}
+          cursor={{ fill: "#eef1ec" }}
+          contentStyle={{ borderRadius: 4, border: "1px solid #cdd5d0", fontSize: 12 }}
+        />
+        <Bar dataKey="saving" name="Saved on sale" fill="#5e8a7c" radius={[2, 2, 0, 0]} isAnimationActive={false} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** Per option: buyer's SDLT bought directly, buyer's duty on this sale, and the saving. */
+export function SaleTable({ result, best, onPick }: { result: EngineResult; best?: OptionId | null; onPick?: (o: OptionId) => void }) {
+  return (
+    <table className="w-full text-[13px]">
+      <thead>
+        <tr className="text-left text-[11px] text-muted">
+          <th className="pb-1.5 font-medium">Option</th>
+          <th className="pb-1.5 text-right font-medium">Buyer pays</th>
+          <th className="pb-1.5 text-right font-semibold text-ink">Saved</th>
+        </tr>
+      </thead>
+      <tbody>
+        {OPTIONS.map((o) => {
+          const s = saleSaving(result, o);
+          return (
+            <tr key={o} className="border-t border-rule-soft">
+              <td className={`py-1.5 font-bold ${o === best ? "text-edge" : ""}`}>
+                {onPick ? (
+                  <button onClick={() => onPick(o)} className="rounded px-1 hover:bg-paper" aria-label={`Show option ${o}`}>
+                    {o}
+                  </button>
+                ) : (
+                  o
+                )}
+              </td>
+              <td className="text-right">
+                <CostMoney title={`Option ${o}, next buyer's stamp duty on sale`} rows={s.rows.sale} amount={s.saleDuty} />
+              </td>
+              <td className={`tabular text-right font-semibold ${o === best ? "text-edge" : ""}`}>
+                {s.saving === 0 ? <span className="text-faint">—</span> : gbp(s.saving)}
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );

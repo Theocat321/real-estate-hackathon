@@ -10,8 +10,8 @@ import type { Cliff } from "@/engine/cliffs";
 import type { OptimiseResult } from "@/engine/optimise";
 import { CostMoney } from "@/components/SourceDrawer";
 import { StructureChart } from "@/components/StructureChart";
-import { FlagList, OptionDTimeline, TotalsChart, TotalsTable } from "@/components/StudioPanels";
-import { HORIZON_LABEL, breakdown, isFamily, type Horizon } from "@/lib/horizon";
+import { FlagList, OptionDTimeline, SaleChart, SaleTable, TotalsChart, TotalsTable } from "@/components/StudioPanels";
+import { HORIZONS, HORIZON_LABEL, breakdown, isFamily, saleSaving, type Horizon } from "@/lib/horizon";
 import {
   INVESTOR_PRESETS,
   OPTIONS,
@@ -111,11 +111,14 @@ export default function StudioPage() {
 
   const seed = packet.items.find((p) => p.id === packet.seed_id) ?? packet.items[0];
   const family = isFamily(INVESTOR_PRESETS[preset]);
+  const onSale = horizon === "sale";
   const totalOf = (o: OptionId) => (result ? breakdown(result, o, horizon, family).total : Infinity);
-  const upfront = totalOf;
-  const best = result ? OPTIONS.reduce((a, b) => (upfront(b) < upfront(a) ? b : a)) : null;
-  const tied = best ? OPTIONS.filter((o) => upfront(o) === upfront(best)) : [];
-  const soleBest = tied.length === 1 ? best : null;
+  const savingOf = (o: OptionId) => (result ? saleSaving(result, o).saving : 0);
+  // On sale, higher is better (a saving); otherwise lower is better (a cost). `score` is lower-is-better either way.
+  const score = (o: OptionId) => (onSale ? -savingOf(o) : totalOf(o));
+  const best = result ? OPTIONS.reduce((a, b) => (score(b) < score(a) ? b : a)) : null;
+  const tied = best ? OPTIONS.filter((o) => score(o) === score(best)) : [];
+  const soleBest = tied.length === 1 && !(onSale && best && savingOf(best) === 0) ? best : null;
   const s = structures?.find((x) => x.option === tab);
   const rows = result?.rows.filter((r) => r.option === tab) ?? [];
 
@@ -145,7 +148,7 @@ export default function StudioPage() {
         <fieldset className="ml-auto">
           <legend className="mb-1 text-[12px] text-muted">Compare over</legend>
           <div className="flex rounded-md border border-rule bg-sheet p-0.5 text-[13px]">
-            {(["purchase", "10y", "25y"] as Horizon[]).map((h) => (
+            {HORIZONS.map((h) => (
               <button
                 key={h}
                 onClick={() => setHorizon(h)}
@@ -197,8 +200,8 @@ export default function StudioPage() {
       <div role="tablist" aria-label="Ownership options" onKeyDown={onTabKey} className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
         {OPTIONS.map((o) => {
           const st = structures?.find((x) => x.option === o);
-          const cost = result ? totalOf(o) : null;
-          const delta = result && best && cost != null ? cost - totalOf(best) : null;
+          const cost = result ? (onSale ? savingOf(o) : totalOf(o)) : null;
+          const delta = result && best && cost != null ? Math.abs(score(o) - score(best)) : null;
           const selected = o === tab;
           const isBest = o === soleBest;
           return (
@@ -225,7 +228,23 @@ export default function StudioPage() {
                 <span className="line-clamp-2 block text-[13px] font-semibold leading-tight">{st?.name ?? "…"}</span>
                 <span className="wide tabular mt-1 block text-[18px] font-bold leading-none">{cost == null ? "…" : gbp(cost)}</span>
                 <span className={`mt-1 block text-[11px] leading-tight ${selected ? "text-sheet/70" : isBest ? "font-medium text-edge" : "text-muted"}`}>
-                  {isBest ? `Lowest ${horizon === "purchase" ? "on purchase" : `over ${HORIZON_LABEL[horizon]}`}` : delta == null ? "" : delta === 0 ? "Joint lowest" : `+${gbp(delta)} vs lowest`}
+                  {onSale
+                    ? cost == null
+                      ? ""
+                      : cost === 0
+                        ? "No saving: next buyer pays full SDLT"
+                        : isBest
+                          ? "Saved on sale, the most"
+                          : delta === 0
+                            ? "Saved on sale, joint most"
+                            : `Saved on sale, ${gbp(delta)} less than best`
+                    : isBest
+                      ? `Lowest ${horizon === "purchase" ? "on purchase" : `over ${HORIZON_LABEL[horizon]}`}`
+                      : delta == null
+                        ? ""
+                        : delta === 0
+                          ? "Joint lowest"
+                          : `+${gbp(delta)} vs lowest`}
                 </span>
               </span>
             </button>
@@ -244,7 +263,31 @@ export default function StudioPage() {
         <div className="h-[max(340px,calc(100vh-25rem))]">{s && result ? <StructureChart structure={s} rows={result.rows} large /> : <div className="survey-grid h-full" />}</div>
         <div className="grid gap-6 border-t border-rule px-5 py-4 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-start">
           <dl className="flex gap-6">
-            {result &&
+            {result && onSale &&
+              (() => {
+                const v = saleSaving(result, tab);
+                const parts: [string, number, typeof v.rows.direct][] = [
+                  ["Buyer's SDLT, bought directly", v.directSdlt, v.rows.direct],
+                  [tab === "A" ? "Buyer's SDLT, this sale" : "Buyer's stamp duty on shares", v.saleDuty, v.rows.sale],
+                ];
+                return (
+                  <>
+                    {parts.map(([label, n, r]) => (
+                      <div key={label}>
+                        <dt className="whitespace-nowrap text-[12px] text-muted">{label}</dt>
+                        <dd className="wide tabular text-[20px] font-bold">
+                          <CostMoney title={`Option ${tab}, ${label.toLowerCase()}`} rows={r} amount={n} />
+                        </dd>
+                      </div>
+                    ))}
+                    <div className="border-l border-rule pl-6">
+                      <dt className="whitespace-nowrap text-[12px] text-muted">Saved on sale</dt>
+                      <dd className={`wide tabular text-[20px] font-bold ${tab === soleBest ? "text-edge" : ""}`}>{gbp(v.saving)}</dd>
+                    </div>
+                  </>
+                );
+              })()}
+            {result && !onSale &&
               (() => {
                 const b = breakdown(result, tab, horizon, family);
                 const parts: [string, number, typeof b.rows.purchase][] = [
@@ -327,10 +370,23 @@ export default function StudioPage() {
               </section>
             )}
             <section>
-              <h3 className="text-[13px] font-semibold">What each option costs over {HORIZON_LABEL[horizon].toLowerCase()}</h3>
-              <div className="mt-2 h-44">{result && <TotalsChart result={result} horizon={horizon} family={family} />}</div>
-              <div className="mt-3">{result && <TotalsTable result={result} horizon={horizon} family={family} best={soleBest} onPick={setTab} />}</div>
-              <p className="mt-2 text-[11px] text-faint">{horizon === "25y" && family ? "Assumes one death in 25 years: without a trust the family pays 40% inheritance tax above the nil-rate band. " : ""}Sale costs not counted: a share sale also saves the next buyer stamp duty.</p>
+              {onSale ? (
+                <>
+                  <h3 className="text-[13px] font-semibold">What each option saves when you sell</h3>
+                  <div className="mt-2 h-44">{result && <SaleChart result={result} />}</div>
+                  <div className="mt-3">{result && <SaleTable result={result} best={soleBest} onPick={setTab} />}</div>
+                  <p className="mt-2 text-[11px] text-faint">
+                    Selling the company instead of the properties: the next buyer pays 0.5% stamp duty on the shares, not SDLT on the properties. The saving is theirs, so a seller can ask for some of it in the price. Today&apos;s prices; capital gains tax not counted.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-[13px] font-semibold">What each option costs over {HORIZON_LABEL[horizon].toLowerCase()}</h3>
+                  <div className="mt-2 h-44">{result && <TotalsChart result={result} horizon={horizon} family={family} />}</div>
+                  <div className="mt-3">{result && <TotalsTable result={result} horizon={horizon} family={family} best={soleBest} onPick={setTab} />}</div>
+                  <p className="mt-2 text-[11px] text-faint">{horizon === "25y" && family ? "Assumes one death in 25 years: without a trust the family pays 40% inheritance tax above the nil-rate band. " : ""}Sale not counted here: see On sale for what each option saves the next buyer.</p>
+                </>
+              )}
             </section>
             <div className="-mx-4 border-t border-rule-soft" />
             <CliffPanel cliffs={cliffs} loading={loading || (!!result && !cliffs)} bare />
