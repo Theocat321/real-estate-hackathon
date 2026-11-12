@@ -14,6 +14,7 @@ export default function StartPage() {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [upload, setUpload] = useState<{ name: string; properties: Property[] } | null>(null);
   const [drag, setDrag] = useState(false);
+  const [typed, setTyped] = useState<Record<string, string>>({});
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function findSimilar(seed_id: string) {
@@ -29,9 +30,22 @@ export default function StartPage() {
     }
   }
 
+  /** Lots with a price typed in by the user, recorded as a user-entered source. */
+  function withTypedPrices(items: Property[], file: string): Property[] {
+    return items.map((p) => {
+      const v = Number((typed[p.id] ?? "").replace(/[£,\s]/g, ""));
+      if (p.price_gbp || !v) return p;
+      return {
+        ...p,
+        price_kind: "asking" as const,
+        price_gbp: { value: Math.round(v), source: { kind: "user" as const, file, excerpt: `Price entered by you for ${p.address}` } },
+      };
+    });
+  }
+
   function buildPacket() {
     if (!upload) return;
-    const packet = packetFromUpload(upload.properties, upload.name);
+    const packet = packetFromUpload(withTypedPrices(upload.properties, upload.name), upload.name);
     savePacket(packet);
     router.push(`/packet/${encodeURIComponent(packet.id)}`);
   }
@@ -40,6 +54,7 @@ export default function StartPage() {
     setBusy(`Reading ${file.name}…`);
     setError(null);
     setUpload(null);
+    setTyped({});
     try {
       const res = await extract(file);
       setWarnings(res.warnings);
@@ -52,7 +67,9 @@ export default function StartPage() {
     }
   }
 
-  const total = upload?.properties.reduce((s, p) => s + (p.price_gbp?.value ?? 0), 0) ?? 0;
+  const priced = upload ? withTypedPrices(upload.properties, upload.name) : [];
+  const total = priced.reduce((s, p) => s + (p.price_gbp?.value ?? 0), 0);
+  const missing = priced.filter((p) => !p.price_gbp).length;
 
   return (
     <div className="mx-auto grid max-w-[1400px] gap-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16">
@@ -115,15 +132,38 @@ export default function StartPage() {
                 <li key={p.id} className="flex items-center gap-3 py-2.5">
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[14px] font-medium">{p.address}</span>
-                    <span className="text-[12px] text-muted">Row {p.price_gbp?.source.row ?? i + 1}</span>
+                    <span className="text-[12px] text-muted">
+                      {p.price_gbp?.source.page != null || p.rent_pa_gbp?.source.page != null
+                        ? `Brochure${p.rent_pa_gbp ? `, rent ${gbp(p.rent_pa_gbp.value)} a year` : ""}${p.size_sqft ? `, ${p.size_sqft.value.toLocaleString("en-GB")} sq ft` : ""}`
+                        : `Row ${p.price_gbp?.source.row ?? i + 1}`}
+                    </span>
                   </span>
                   <UseTag use={p.use} />
-                  <span className="w-24 text-right text-[14px]">
-                    <SourcedMoney title={`Price, ${p.address}`} sourced={p.price_gbp} />
+                  <span className="w-32 text-right text-[14px]">
+                    {p.price_gbp ? (
+                      <SourcedMoney title={`Price, ${p.address}`} sourced={p.price_gbp} />
+                    ) : (
+                      <label className="flex items-center justify-end gap-1">
+                        <span className="sr-only">Price for {p.address}</span>
+                        <span className="text-muted">£</span>
+                        <input
+                          inputMode="numeric"
+                          placeholder="Enter price"
+                          value={typed[p.id] ?? ""}
+                          onChange={(e) => setTyped((t) => ({ ...t, [p.id]: e.target.value }))}
+                          className="tabular w-24 rounded-[3px] border border-edge bg-edge-soft px-2 py-1 text-right text-[14px] outline-none placeholder:text-edge/60 focus:bg-sheet"
+                        />
+                      </label>
+                    )}
                   </span>
                 </li>
               ))}
             </ul>
+            {missing > 0 && (
+              <p className="mt-3 text-[13px] text-edge">
+                {missing === 1 ? "One property has" : `${missing} properties have`} no price in the file. Enter the price you expect to pay, or it won't be costed.
+              </p>
+            )}
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <button onClick={buildPacket} className="rounded-md bg-ink px-5 py-3 text-[15px] font-semibold text-sheet transition-colors hover:bg-ink-soft">
                 Build the packet
