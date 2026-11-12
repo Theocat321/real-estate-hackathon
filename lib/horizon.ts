@@ -23,10 +23,12 @@ const YEARS: Record<Horizon, number> = { purchase: 0, "10y": 10, "25y": 25, "25y
 export interface Assumptions {
   /** Homes let to unconnected tenants: sent to the engine as assumptions.rental_relief (17% SDLT disapplied, ATED nil). */
   rentalRelief: boolean;
+  /** Company profits after corporation tax paid out each year: sent to the engine as assumptions.distribute_profits (dividend tax rows). */
+  distributeProfits: boolean;
   /** Share (0–1) of the next buyer's stamp-duty saving the seller gets back in the price. */
   saleShare: number;
 }
-export const DEFAULT_ASSUMPTIONS: Assumptions = { rentalRelief: true, saleShare: 0.5 };
+export const DEFAULT_ASSUMPTIONS: Assumptions = { rentalRelief: true, distributeProfits: true, saleShare: 0.5 };
 
 export const isFamily = (investors: Investor[]) =>
   investors.some((i) => i.type === "family_office_uk" || i.type === "family_office_nonuk");

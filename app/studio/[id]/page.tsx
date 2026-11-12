@@ -56,12 +56,12 @@ export default function StudioPage() {
     else setError("Packet not found in this session.");
   }, [id]);
 
-  const run = useCallback(async (p: Packet, investors: Investor[], rentalRelief: boolean) => {
+  const run = useCallback(async (p: Packet, investors: Investor[], rentalRelief: boolean, distributeProfits: boolean) => {
     setLoading(true);
     setError(null);
     try {
       const { structures } = await buildStructures(p, investors);
-      const scenario = { packet: p, structures, investors, assumptions: { rental_relief: rentalRelief } };
+      const scenario = { packet: p, structures, investors, assumptions: { rental_relief: rentalRelief, distribute_profits: distributeProfits } };
       const result = await runScenario(scenario);
       setCliffs(null);
       findCliffs(scenario).then(setCliffs).catch(() => setCliffs([]));
@@ -77,11 +77,12 @@ export default function StudioPage() {
   }, []);
 
   const rentalRelief = assume.rentalRelief;
+  const distributeProfits = assume.distributeProfits;
   const presetRef = useRef(preset);
   useEffect(() => {
     presetRef.current = preset;
-    if (packet) void run(packet, INVESTOR_PRESETS[preset], rentalRelief);
-  }, [packet, preset, rentalRelief, run]);
+    if (packet) void run(packet, INVESTOR_PRESETS[preset], rentalRelief, distributeProfits);
+  }, [packet, preset, rentalRelief, distributeProfits, run]);
 
   async function onExport() {
     if (!packet || !structures || !result) return;
@@ -119,6 +120,8 @@ export default function StudioPage() {
   const totalOf = (o: OptionId) => (result ? breakdown(result, o, horizon, family, assume).total : Infinity);
   const showRelief = !!result && paysAted(result);
   const showShare = horizon === "25y_sell";
+  // A company pays corporation tax on rent, so paying out its profits brings dividend tax.
+  const showDividends = !!result && result.rows.some((r) => r.tax === "CORP_TAX_RENT" || r.tax === "DIVIDEND_TAX");
   const savingOf = (o: OptionId) => (result ? saleSaving(result, o).saving : 0);
   // On sale, higher is better (a saving); otherwise lower is better (a cost). `score` is lower-is-better either way.
   const score = (o: OptionId) => (onSale ? -savingOf(o) : totalOf(o));
@@ -188,7 +191,7 @@ export default function StudioPage() {
           </button>
         )}
       </div>
-      {(showRelief || showShare) && (
+      {(showRelief || showShare || showDividends) && (
         <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px]">
           {showRelief && (
             <label className="flex cursor-pointer items-center gap-2">
@@ -200,6 +203,19 @@ export default function StudioPage() {
               />
               <span>
                 Homes let to unconnected tenants <span className="text-muted">(rental-business relief on 17% SDLT and ATED)</span>
+              </span>
+            </label>
+          )}
+          {showDividends && (
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={assume.distributeProfits}
+                onChange={(e) => setAssume({ ...assume, distributeProfits: e.target.checked })}
+                className="size-4 accent-[#17262a]"
+              />
+              <span>
+                Profits paid out each year <span className="text-muted">(dividend tax on what companies pay their owners)</span>
               </span>
             </label>
           )}
@@ -429,6 +445,7 @@ export default function StudioPage() {
                   <p className="mt-2 text-[11px] text-faint">
                     {horizon.startsWith("25y") && family ? "Assumes one death in 25 years: without a trust the family pays 40% inheritance tax above the nil-rate band. " : ""}
                     {showRelief && assume.rentalRelief ? "Rental-business relief assumed: homes let to unconnected tenants (17% SDLT disapplied, ATED nil). " : ""}
+                    {showDividends && assume.distributeProfits ? "Company profits after corporation tax are paid out each year, so owners pay dividend tax. " : ""}
                     {showShare
                       ? `Sold after 25 years as a company: the next buyer saves stamp duty and you get ${assume.saleShare * 100}% of that back in the price. Today's prices; capital gains tax not counted.`
                       : "Sale not counted here: see 25 years, then sell."}

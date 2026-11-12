@@ -20,6 +20,8 @@ import { STAMP_DUTY_SHARES_FLAG, STAMP_DUTY_SHARES_RULE, stampDutyShares } from 
 import { STAMP_DUTY_UNITS_FLAG, STAMP_DUTY_UNITS_RULE, stampDutyUnits } from "./rules/stamp_duty_units";
 import { CORP_TAX_RULE, PENSION_EXEMPT_RULE, corpTax } from "./rules/corp_tax";
 import { PROFIT_SHARE_OF_RENT, rentFor } from "./rules/rent";
+import { INCOME_TAX_RULE, incomeTaxOnRent } from "./rules/income_tax";
+import { type DividendRecipient, dividendRuleFor, dividendTax } from "./rules/dividend_tax";
 import { ATED_FLAG, ATED_RULE, ATED_THRESHOLD, ated } from "./rules/ated";
 import { IHT_ENTRY_RULE, ihtEntry } from "./rules/iht_entry";
 import { IHT_TEN_YEAR_RULE, ihtTenYear } from "./rules/iht_ten_year";
@@ -103,6 +105,17 @@ export function nonUkShare(s: Structure, nodeId: string, seen = new Set<string>(
   return owners.reduce((sum, e) => sum + (e.pct / 100) * nonUkShare(s, e.from, seen), 0);
 }
 
+const isFamilyNode = (n: StructNode) => n.investor_type === "family_office_uk" || n.investor_type === "family_office_nonuk";
+
+/** Who receives a dividend, for dividend tax. Stops at the direct owner: a company owner takes the dividend exemption. */
+function dividendRecipient(n: StructNode): DividendRecipient {
+  if (n.kind === "trust") return "trust";
+  if (n.investor_type === "family_office_uk") return "individual";
+  if (n.investor_type === "family_office_nonuk") return "non_uk";
+  if (n.investor_type === "uk_pension") return "pension";
+  return "uk_company";
+}
+
 /** SDLT non-UK test: a non-UK buyer, or a UK company more than half controlled from outside the UK. */
 export const buyerIsNonUk = (s: Structure, buyer: StructNode) => nonUkShare(s, buyer.id) > 0.5;
 
@@ -128,6 +141,7 @@ export function runEngine(input: ScenarioInput): EngineResult {
     const nonUk = nonUkBuyer !== undefined;
     const buyerLabel = buyers.map((b) => (buyers.length > 1 ? `${b.node.label} (${Math.round(b.share * 100)}%)` : b.node.label)).join(" and ");
     const rentalRelief = input.assumptions?.rental_relief ?? false;
+    const distribute = input.assumptions?.distribute_profits ?? false;
     const nodeFor = (p: Property) => s.nodes.find((n) => n.kind === "property" && n.property_id === p.id)?.id ?? buyer.id;
     const spv = s.nodes.find((n) => n.kind === "company") ?? buyer;
     const flag = (f: Omit<Flag, "option">) => flags.push({ option: opt, ...f });
@@ -267,11 +281,38 @@ export function runEngine(input: ScenarioInput): EngineResult {
           row("hold", "CORP_TAX_RENT", node.id, 0, `${node.label}${of}: a registered pension scheme pays no tax on £${fmt(part)} rental profit = £0`, inputs, PENSION_EXEMPT_RULE);
           continue;
         }
+        if (isFamilyNode(node)) {
+          const t = incomeTaxOnRent(part);
+          const nrl = node.investor_type === "family_office_nonuk" ? "; collected under the non-resident landlord scheme" : "";
+          row("hold", "INCOME_TAX_RENT", node.id, t.amount, `${node.label}${of}, income tax on £${fmt(rent)} rent less 25% costs: ${t.formula}${nrl}`, inputs, INCOME_TAX_RULE);
+          continue;
+        }
         const t = corpTax(part);
-        const who = node.kind === "investor" && node.investor_type !== "uk_company" ? `${node.label}, taxed as a company` : node.label;
-        row("hold", "CORP_TAX_RENT", node.id, t.amount, `${who}${of}, on £${fmt(rent)} rent less 25% costs: ${t.formula}`, inputs, CORP_TAX_RULE);
-        if (node.investor_type === "family_office_uk" || node.investor_type === "family_office_nonuk") {
-          flag({ entity_id: node.id, rule_id: CORP_TAX_RULE.id, severity: "review", message: `${node.label} is taxed as a company on rent. Individuals or a trust pay income tax instead.`, citation_url: CORP_TAX_RULE.citation_url });
+        row("hold", "CORP_TAX_RENT", node.id, t.amount, `${node.label}${of}, on £${fmt(rent)} rent less 25% costs: ${t.formula}`, inputs, CORP_TAX_RULE);
+        // Profits paid out: what is left after corporation tax goes to the company's owners as dividends.
+        if (distribute) {
+          const paidOut = part - t.amount;
+          for (const e of s.edges.filter((e) => e.to === node.id)) {
+            const owner = s.nodes.find((n) => n.id === e.from);
+            if (!owner) continue;
+            const dividend = Math.round((paidOut * e.pct) / 100);
+            const recipient = dividendRecipient(owner);
+            const d = dividendTax(dividend, recipient);
+            const shareText = e.pct === 100 ? "" : `; ${e.pct}% share = £${fmt(dividend)}`;
+            row(
+              "hold",
+              "DIVIDEND_TAX",
+              owner.id,
+              d.amount,
+              `${owner.label} (${e.pct}% of ${node.label}): profits paid out each year, £${fmt(part)} profit - £${fmt(t.amount)} corporation tax = £${fmt(paidOut)}${shareText}; ${d.formula}`,
+              [
+                ...rentInputs,
+                { label: `${owner.label} share of ${node.label}`, value: `${e.pct}%`, source: structureSource(opt, `edge ${owner.id} -> ${node.id}`) },
+                { label: "Profits paid out each year", value: "Yes", source: { kind: "user", file: "scenario.assumptions.distribute_profits", excerpt: "Profit after corporation tax is paid out as dividends" } },
+              ],
+              dividendRuleFor(recipient),
+            );
+          }
         }
       }
       const est = rents.filter((x) => x.r.estimated).length;

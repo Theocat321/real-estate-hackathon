@@ -21,4 +21,10 @@ export const CITE = {
   trustTenYear: "https://www.gov.uk/hmrc-internal-manuals/inheritance-tax-manual/ihtm42081",
   /** 40% death rate above the nil-rate band. */
   ihtDeath: "https://www.gov.uk/inheritance-tax",
+  /** Income tax bands and rates; property income at the 45% additional rate. */
+  incomeTax: "https://www.gov.uk/income-tax-rates",
+  /** Dividend tax rates (39.35% additional rate); company and non-resident treatment. */
+  dividendTax: "https://www.gov.uk/tax-on-dividends",
+  /** Trustees of discretionary trusts pay the 39.35% dividend trust rate. */
+  trustIncomeTax: "https://www.gov.uk/guidance/trusts-and-income-tax",
 } as const;

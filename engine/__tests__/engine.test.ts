@@ -5,6 +5,8 @@ import { runEngine, ScenarioInputSchema } from "../index";
 import { sdltRes } from "../rules/sdlt_res";
 import { ated } from "../rules/ated";
 import { stampDutyShares } from "../rules/stamp_duty_shares";
+import { incomeTaxOnRent } from "../rules/income_tax";
+import { dividendTax } from "../rules/dividend_tax";
 import { POST } from "../../app/api/engine/route";
 import { buildA, buildB, buildD, buildStructureTemplates } from "@/agent/structures";
 import type { Investor, Packet } from "@/contracts";
@@ -78,14 +80,18 @@ describe("golden sample fixture", () => {
     expect(exit("B")).toMatchObject([{ tax: "STAMP_DUTY_SHARES", amount_gbp: 7025 }]);
   });
 
-  it("tax on rent: PropCo pays corporation tax; through the fund the pension's share is exempt", () => {
-    const rent = (o: "B" | "C") => result.rows.filter((r) => r.option === o && r.tax === "CORP_TAX_RENT");
-    expect(rent("B")).toMatchObject([{ entity_id: "spv", amount_gbp: 14_401 }]);
-    expect(rent("C")).toMatchObject([
-      { entity_id: "inv1", amount_gbp: 0 },
-      { entity_id: "inv2", amount_gbp: 5_206 },
-    ]);
+  it("tax on rent: PropCo pays corporation tax; through the fund the pension is exempt and the family pays income tax", () => {
+    const rent = (o: OptionId) => result.rows.filter((r) => r.option === o && (r.tax === "CORP_TAX_RENT" || r.tax === "INCOME_TAX_RENT"));
+    expect(rent("B")).toMatchObject([{ entity_id: "spv", tax: "CORP_TAX_RENT", amount_gbp: 14_401 }]);
+    // Family office's 40% of £68,494 profit = £27,398 x 45% = 12,329.1, floor
+    for (const o of ["A", "C"] as const) {
+      expect(rent(o)).toMatchObject([
+        { entity_id: "inv1", tax: "CORP_TAX_RENT", amount_gbp: 0 },
+        { entity_id: "inv2", tax: "INCOME_TAX_RENT", amount_gbp: 12_329 },
+      ]);
+    }
     expect(result.flags.some((f) => f.rule_id === "rent_estimate")).toBe(true);
+    expect(result.flags.some((f) => f.message.includes("taxed as a company"))).toBe(false);
   });
 
   it("D breakdown by tax", () => {
@@ -330,8 +336,9 @@ describe("real investors in A, B and D", () => {
     expect(row.formula).toContain("FO");
     // ATED applies because one buyer is a company
     expect(r.rows.some((x) => x.tax === "ATED" && x.amount_gbp === 9_450)).toBe(true);
-    // Rent is taxed on each owner's half: two rows
-    expect(r.rows.filter((x) => x.tax === "CORP_TAX_RENT").map((x) => x.entity_id)).toEqual(["inv1", "inv2"]);
+    // Rent is taxed on each owner's half: corporation tax for the company, income tax for the family office
+    expect(r.rows.filter((x) => x.tax === "CORP_TAX_RENT").map((x) => x.entity_id)).toEqual(["inv1"]);
+    expect(r.rows.filter((x) => x.tax === "INCOME_TAX_RENT").map((x) => x.entity_id)).toEqual(["inv2"]);
   });
 
   it("D with family 70 / pension 30 bases trust IHT on 70% of the packet", () => {
@@ -384,4 +391,86 @@ describe("real investors in A, B and D", () => {
     expect(t.B).toEqual({ acquire: 49_250, hold: 14_401, exit: 7_025 });
     expect(t.D).toEqual({ acquire: 265_250, hold: 14_401, exit: 7_025, ten_year: 64_800, death: 432_000 });
   });
+});
+
+describe("tax on rent by who receives it", () => {
+  const packetOf = (items: Property[]): Packet => ({ id: "t", seed_id: items[0].id, items, totals: { price_gbp: 0, rent_pa_gbp: 0, blended_yield_pct: null, dwellings: 0 }, match_reason: "" });
+  const rentSource = { kind: "listing" as const, file: "listings.csv", row: 1 };
+
+  it("income tax on rent: 45% additional rate", () => {
+    const r = incomeTaxOnRent(100_000);
+    expect(r.amount).toBe(45_000);
+    expect(r.formula).toContain("assumes other income already uses the lower bands");
+  });
+
+  it("dividend tax by recipient, rounded down", () => {
+    expect(dividendTax(81_000, "trust").amount).toBe(31_873); // 31,873.5
+    expect(dividendTax(81_000, "individual").amount).toBe(31_873);
+    for (const r of ["uk_company", "pension", "non_uk"] as const) expect(dividendTax(81_000, r).amount).toBe(0);
+  });
+
+  it("D with £108,000 profit: SPV pays 24,870 and the trust pays 32,711 dividend tax", () => {
+    const shop = resProperty("s", 2_000_000, { use: "commercial", dwellings: 0, rent_pa_gbp: { value: 144_000, source: rentSource } });
+    const inv: Investor[] = [{ type: "family_office_uk", label: "FO", pct: 100 }];
+    const r = runEngine({ packet: packetOf([shop]), investors: inv, structures: [buildD(packetOf([shop]), inv)], assumptions: { distribute_profits: true } });
+    expect(r.rows.find((x) => x.tax === "CORP_TAX_RENT")).toMatchObject({ entity_id: "spv", amount_gbp: 24_870 });
+    const div = r.rows.filter((x) => x.tax === "DIVIDEND_TAX");
+    expect(div).toMatchObject([{ entity_id: "trust", stage: "hold", amount_gbp: 32_711 }]);
+    expect(div[0].formula).toContain("83,130");
+    expect(div[0].rule).toMatchObject({ id: "dividend_tax", citation_url: "https://www.gov.uk/guidance/trusts-and-income-tax", as_of: "2026-27" });
+  });
+
+  it("sample with profits paid out: one dividend row per PropCo owner, £0 rows kept", () => {
+    const r = runEngine({ ...scenario, assumptions: { distribute_profits: true } });
+    const div = (o: OptionId) => r.rows.filter((x) => x.option === o && x.tax === "DIVIDEND_TAX");
+    // 68,494 - 14,401 = 54,093 paid out; family 40% = 21,637 x 39.35% = 8,514.16
+    expect(div("B")).toMatchObject([
+      { entity_id: "inv1", amount_gbp: 0 },
+      { entity_id: "inv2", amount_gbp: 8_514 },
+    ]);
+    expect(div("D")).toMatchObject([
+      { entity_id: "trust", amount_gbp: 8_514 },
+      { entity_id: "inv1", amount_gbp: 0 },
+    ]);
+    expect(div("A")).toEqual([]);
+    expect(div("C")).toEqual([]);
+    expect(r.totals.B.hold).toBe(14_401 + 8_514);
+    for (const x of div("B")) {
+      expect(x.rule.citation_url).toBe("https://www.gov.uk/tax-on-dividends");
+      expect(x.inputs.every((i) => i.source.file)).toBe(true);
+    }
+  });
+
+  it("non-UK family receiving rent directly pays income tax under the non-resident landlord scheme", () => {
+    const items = [resProperty("s", 1_000_000, { use: "commercial", dwellings: 0 })];
+    const inv: Investor[] = [{ type: "family_office_nonuk", label: "Hart FO", pct: 100 }];
+    const row = run(items, inv).rows.find((x) => x.tax === "INCOME_TAX_RENT")!;
+    // 1,000,000 x 6.5% = 65,000 rent; 75% = 48,750 profit; x 45% = 21,937.5, floor
+    expect(row.amount_gbp).toBe(21_937);
+    expect(row.formula).toContain("non-resident landlord scheme");
+  });
+
+  it("company owned by a non-UK family: no UK tax on the dividend", () => {
+    const items = [resProperty("s", 1_000_000, { use: "commercial", dwellings: 0 })];
+    const inv: Investor[] = [{ type: "family_office_nonuk", label: "Hart FO", pct: 100 }];
+    const r = runEngine({ packet: packetOf(items), investors: inv, structures: [buildB(packetOf(items), inv)], assumptions: { distribute_profits: true } });
+    const div = r.rows.filter((x) => x.tax === "DIVIDEND_TAX");
+    expect(div).toMatchObject([{ amount_gbp: 0 }]);
+    expect(div[0].formula).toContain("non-UK resident");
+  });
+
+  it("distribute_profits off gives no dividend rows and today's totals", () => {
+    const off = runEngine({ ...scenario, assumptions: { distribute_profits: false } });
+    expect(off.rows.some((x) => x.tax === "DIVIDEND_TAX")).toBe(false);
+    expect(off.totals).toEqual(runEngine(scenario).totals);
+  });
+
+  it("all lots unpriced gives no income or dividend tax rows", () => {
+    const inv: Investor[] = [{ type: "family_office_uk", label: "FO", pct: 100 }];
+    const items = [resProperty("x", 0, { price_gbp: null })];
+    const r = runEngine({ packet: packetOf(items), investors: inv, structures: buildStructureTemplates(packetOf(items), inv), assumptions: { distribute_profits: true } });
+    expect(r.rows.some((x) => x.tax === "INCOME_TAX_RENT" || x.tax === "DIVIDEND_TAX")).toBe(false);
+  });
+
+  const run = (items: Property[], inv: Investor[]) => runEngine({ packet: packetOf(items), investors: inv, structures: [buildA(packetOf(items), inv)] });
 });

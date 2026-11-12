@@ -329,10 +329,10 @@
     }
   ],
   "expected_engine": {
-    "note": "Golden values. Engine tests must reproduce these exactly. totals[option][stage] = sum of CostRow.amount_gbp for that option and stage. IHT_ENTRY is stage 'acquire'. IHT_DEATH_COMPARATOR (stage 'death') is what the family would pay holding personally; the UI shows it beside D but it is not a cost of D. CORP_TAX_RENT (stage 'hold'): no rent in the data, so estimated at 6.5% commercial yield: rent \u00a391,325, profit 75% = \u00a368,494; company CT 25% less marginal relief = \u00a314,401; in C the fund is transparent: pension 60% exempt, UK family office 40% at 19% = \u00a35,206. Investors keep their shares: in A the pension's 60% of rent is exempt and the family office's 40% (\u00a327,398 profit) pays 19% = \u00a35,206, as in C; B's PropCo pays CT itself. In D the trust holds the family office's 40% of PropCo, so trust IHT is on \u00a31,405,000 x 40% = \u00a3562,000: entry (562,000 - 325,000) x 20% = \u00a347,400, ten-year x 6% = \u00a314,220, death comparator x 40% = \u00a394,800.",
+    "note": "Golden values. Engine tests must reproduce these exactly. totals[option][stage] = sum of CostRow.amount_gbp for that option and stage. IHT_ENTRY is stage 'acquire'. IHT_DEATH_COMPARATOR (stage 'death') is what the family would pay holding personally; the UI shows it beside D but it is not a cost of D. CORP_TAX_RENT (stage 'hold'): no rent in the data, so estimated at 6.5% commercial yield: rent \u00a391,325, profit 75% = \u00a368,494; company CT 25% less marginal relief = \u00a314,401; in C the fund is transparent: pension 60% exempt, UK family office 40% (\u00a327,398 profit) pays income tax at 45% = \u00a312,329 (rounded down). Investors keep their shares: in A the pension's 60% of rent is exempt and the family office's 40% pays income tax at 45% = \u00a312,329, as in C; B's PropCo pays CT itself. No dividend tax here: assumptions.distribute_profits is absent (false). In D the trust holds the family office's 40% of PropCo, so trust IHT is on \u00a31,405,000 x 40% = \u00a3562,000: entry (562,000 - 325,000) x 20% = \u00a347,400, ten-year x 6% = \u00a314,220, death comparator x 40% = \u00a394,800.",
     "A": {
       "acquire": 49250,
-      "hold": 5206
+      "hold": 12329
     },
     "B": {
       "acquire": 49250,
@@ -361,7 +361,7 @@
     },
     "C": {
       "acquire": 49250,
-      "hold": 5206,
+      "hold": 12329,
       "exit": 0
     },
     "D_breakdown": {
