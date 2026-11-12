@@ -10,7 +10,8 @@ import type { Cliff } from "@/engine/cliffs";
 import type { OptimiseResult } from "@/engine/optimise";
 import { CostMoney } from "@/components/SourceDrawer";
 import { StructureChart } from "@/components/StructureChart";
-import { FlagList, OptionDTimeline, STAGE_LABEL, TotalsChart, TotalsTable } from "@/components/StudioPanels";
+import { FlagList, OptionDTimeline, TotalsChart, TotalsTable } from "@/components/StudioPanels";
+import { HORIZON_LABEL, breakdown, isFamily, type Horizon } from "@/lib/horizon";
 import {
   INVESTOR_PRESETS,
   OPTIONS,
@@ -35,6 +36,7 @@ export default function StudioPage() {
   const [exporting, setExporting] = useState(false);
   const [cliffs, setCliffs] = useState<Cliff[] | null>(null);
   const [tab, setTab] = useState<OptionId>("A");
+  const [horizon, setHorizon] = useState<Horizon>("25y");
   const [panelOpen, setPanelOpen] = useState(true);
   const [changeNote, setChangeNote] = useState<string | null>(null);
   const prev = useRef<{ preset: InvestorPreset; structures: Structure[]; result: EngineResult } | null>(null);
@@ -108,7 +110,9 @@ export default function StudioPage() {
   if (!packet) return <p className="text-muted">Loading packet…</p>;
 
   const seed = packet.items.find((p) => p.id === packet.seed_id) ?? packet.items[0];
-  const upfront = (o: OptionId) => result?.totals[o]?.acquire ?? Infinity;
+  const family = isFamily(INVESTOR_PRESETS[preset]);
+  const totalOf = (o: OptionId) => (result ? breakdown(result, o, horizon, family).total : Infinity);
+  const upfront = totalOf;
   const best = result ? OPTIONS.reduce((a, b) => (upfront(b) < upfront(a) ? b : a)) : null;
   const tied = best ? OPTIONS.filter((o) => upfront(o) === upfront(best)) : [];
   const soleBest = tied.length === 1 ? best : null;
@@ -139,6 +143,21 @@ export default function StudioPage() {
           <p className="truncate text-[13px] text-muted">Starting from {seed.address}</p>
         </div>
         <fieldset className="ml-auto">
+          <legend className="mb-1 text-[12px] text-muted">Compare over</legend>
+          <div className="flex rounded-md border border-rule bg-sheet p-0.5 text-[13px]">
+            {(["purchase", "10y", "25y"] as Horizon[]).map((h) => (
+              <button
+                key={h}
+                onClick={() => setHorizon(h)}
+                aria-pressed={horizon === h}
+                className={`rounded-[4px] px-3 py-1.5 transition-colors ${horizon === h ? "bg-ink font-semibold text-sheet" : "text-muted hover:text-ink"}`}
+              >
+                {HORIZON_LABEL[h]}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset>
           <legend className="mb-1 text-[12px] text-muted">Who is investing</legend>
           <div className="flex rounded-md border border-rule bg-sheet p-0.5 text-[13px]">
             {(Object.keys(INVESTOR_PRESETS) as InvestorPreset[]).map((k) => (
@@ -178,8 +197,8 @@ export default function StudioPage() {
       <div role="tablist" aria-label="Ownership options" onKeyDown={onTabKey} className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
         {OPTIONS.map((o) => {
           const st = structures?.find((x) => x.option === o);
-          const cost = result?.totals[o]?.acquire;
-          const delta = result && best && cost != null ? cost - (result.totals[best]?.acquire ?? 0) : null;
+          const cost = result ? totalOf(o) : null;
+          const delta = result && best && cost != null ? cost - totalOf(best) : null;
           const selected = o === tab;
           const isBest = o === soleBest;
           return (
@@ -206,7 +225,7 @@ export default function StudioPage() {
                 <span className="line-clamp-2 block text-[13px] font-semibold leading-tight">{st?.name ?? "…"}</span>
                 <span className="wide tabular mt-1 block text-[18px] font-bold leading-none">{cost == null ? "…" : gbp(cost)}</span>
                 <span className={`mt-1 block text-[11px] leading-tight ${selected ? "text-sheet/70" : isBest ? "font-medium text-edge" : "text-muted"}`}>
-                  {isBest ? "Lowest on purchase" : delta == null ? "on purchase" : delta === 0 ? "Joint lowest" : `+${gbp(delta)} vs lowest`}
+                  {isBest ? `Lowest ${horizon === "purchase" ? "on purchase" : `over ${HORIZON_LABEL[horizon]}`}` : delta == null ? "" : delta === 0 ? "Joint lowest" : `+${gbp(delta)} vs lowest`}
                 </span>
               </span>
             </button>
@@ -225,23 +244,38 @@ export default function StudioPage() {
         <div className="h-[max(340px,calc(100vh-25rem))]">{s && result ? <StructureChart structure={s} rows={result.rows} large /> : <div className="survey-grid h-full" />}</div>
         <div className="grid gap-6 border-t border-rule px-5 py-4 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-start">
           <dl className="flex gap-6">
-            {(["acquire", "hold", "exit", "ten_year"] as const).map((stage) => {
-              const r = rows.filter((x) => x.stage === stage);
-              if (r.length === 0) return null;
-              return (
-                <div key={stage}>
-                  <dt className="whitespace-nowrap text-[12px] text-muted">{STAGE_LABEL[stage]}</dt>
-                  <dd className="wide tabular text-[20px] font-bold">
-                    <CostMoney title={`Option ${tab}, ${STAGE_LABEL[stage].toLowerCase()}`} rows={r} />
-                  </dd>
-                </div>
-              );
-            })}
+            {result &&
+              (() => {
+                const b = breakdown(result, tab, horizon, family);
+                const parts: [string, number, typeof b.rows.purchase][] = [
+                  ["On purchase", b.purchase, b.rows.purchase],
+                  [`Yearly × ${b.years}`, b.yearly, b.rows.yearly],
+                  [`10-year × ${b.decades}`, b.tenYear, b.rows.tenYear],
+                  ["IHT on a death", b.death, b.rows.death],
+                ];
+                return (
+                  <>
+                    {parts
+                      .filter(([, v]) => v > 0)
+                      .map(([label, v, r]) => (
+                        <div key={label}>
+                          <dt className="whitespace-nowrap text-[12px] text-muted">{label}</dt>
+                          <dd className="wide tabular text-[20px] font-bold">
+                            <CostMoney title={`Option ${tab}, ${label.toLowerCase()}`} rows={r} amount={v} />
+                          </dd>
+                        </div>
+                      ))}
+                    {horizon !== "purchase" && (
+                      <div className="border-l border-rule pl-6">
+                        <dt className="whitespace-nowrap text-[12px] text-muted">Total, {HORIZON_LABEL[horizon]}</dt>
+                        <dd className={`wide tabular text-[20px] font-bold ${tab === soleBest ? "text-edge" : ""}`}>{gbp(b.total)}</dd>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
           </dl>
-          <div className="min-w-0 space-y-2">
-            {s?.rationale && <p className="max-w-[75ch] text-[14px] leading-snug text-ink-soft">{s.rationale}</p>}
-            {result && <FlagList flags={result.flags} option={tab} />}
-          </div>
+          <div className="min-w-0 space-y-2">{result && <FlagList flags={result.flags} option={tab} />}</div>
           <Link
             href={`/setup/${encodeURIComponent(packet.id)}/${tab}?investor=${preset}`}
             className={`whitespace-nowrap rounded-md px-5 py-3 text-center text-[14px] font-semibold transition-colors ${
@@ -293,10 +327,10 @@ export default function StudioPage() {
               </section>
             )}
             <section>
-              <h3 className="text-[13px] font-semibold">What each option costs, and when</h3>
-              <div className="mt-2 h-44">{result && <TotalsChart result={result} />}</div>
-              <div className="mt-3">{result && <TotalsTable result={result} best={soleBest} onPick={setTab} />}</div>
-              <p className="mt-2 text-[11px] text-faint">*Inheritance tax if the family held the lots personally. Shown for comparison with D.</p>
+              <h3 className="text-[13px] font-semibold">What each option costs over {HORIZON_LABEL[horizon].toLowerCase()}</h3>
+              <div className="mt-2 h-44">{result && <TotalsChart result={result} horizon={horizon} family={family} />}</div>
+              <div className="mt-3">{result && <TotalsTable result={result} horizon={horizon} family={family} best={soleBest} onPick={setTab} />}</div>
+              <p className="mt-2 text-[11px] text-faint">{horizon === "25y" && family ? "Assumes one death in 25 years: without a trust the family pays 40% inheritance tax above the nil-rate band. " : ""}Sale costs not counted: a share sale also saves the next buyer stamp duty.</p>
             </section>
             <div className="-mx-4 border-t border-rule-soft" />
             <CliffPanel cliffs={cliffs} loading={loading || (!!result && !cliffs)} bare />

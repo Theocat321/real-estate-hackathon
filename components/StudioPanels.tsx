@@ -3,7 +3,8 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { CostRow, EngineResult, Flag, OptionId, Stage } from "@/contracts";
 import { CostMoney } from "@/components/SourceDrawer";
-import { OPTIONS, STAGES, gbp } from "@/lib/api";
+import { OPTIONS, gbp } from "@/lib/api";
+import { HORIZON_LABEL, breakdown, type Breakdown, type Horizon } from "@/lib/horizon";
 
 export const STAGE_LABEL: Record<Stage, string> = {
   acquire: "On purchase",
@@ -22,17 +23,23 @@ const STAGE_COLOR: Record<Stage, string> = {
 
 const k = (v: number) => (v >= 1000 ? `£${Math.round(v / 1000)}k` : `£${v}`);
 
-/** Stacked bar: cost by option and stage. Death comparator excluded (not a cost of any option). */
-export function TotalsChart({ result }: { result: EngineResult }) {
-  const stages = STAGES.filter((s) => s !== "death" && OPTIONS.some((o) => (result.totals[o]?.[s] ?? 0) > 0));
-  const data = OPTIONS.map((o) => ({ option: o, ...Object.fromEntries(stages.map((s) => [s, result.totals[o]?.[s] ?? 0])) }));
+const PART_COLOR = { purchase: "#17262a", yearly: "#5e8a7c", tenYear: "#9fb8ae", death: "#b8202f" } as const;
+const PART_LABEL = { purchase: "On purchase", yearly: "Yearly charges", tenYear: "10-year trust charges", death: "Inheritance tax on a death" } as const;
+type Part = keyof typeof PART_COLOR;
+const PARTS: Part[] = ["purchase", "yearly", "tenYear", "death"];
+
+/** Stacked bar: what each option costs over the chosen period. */
+export function TotalsChart({ result, horizon, family }: { result: EngineResult; horizon: Horizon; family: boolean }) {
+  const b = Object.fromEntries(OPTIONS.map((o) => [o, breakdown(result, o, horizon, family)])) as Record<OptionId, Breakdown>;
+  const parts = PARTS.filter((p) => OPTIONS.some((o) => b[o][p] > 0));
+  const data = OPTIONS.map((o) => ({ option: o, ...Object.fromEntries(parts.map((p) => [p, b[o][p]])) }));
   return (
     <div className="flex h-full flex-col">
       <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
-        {stages.map((s) => (
-          <li key={s} className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-[2px]" style={{ background: STAGE_COLOR[s] }} />
-            {STAGE_LABEL[s]}
+        {parts.map((p) => (
+          <li key={p} className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-[2px]" style={{ background: PART_COLOR[p] }} />
+            {PART_LABEL[p]}
           </li>
         ))}
       </ul>
@@ -48,16 +55,8 @@ export function TotalsChart({ result }: { result: EngineResult }) {
               cursor={{ fill: "#eef1ec" }}
               contentStyle={{ borderRadius: 4, border: "1px solid #cdd5d0", fontSize: 12 }}
             />
-            {stages.map((s, i) => (
-              <Bar
-                key={s}
-                dataKey={s}
-                stackId="cost"
-                name={STAGE_LABEL[s]}
-                fill={STAGE_COLOR[s]}
-                radius={i === stages.length - 1 ? [2, 2, 0, 0] : 0}
-                isAnimationActive={false}
-              />
+            {parts.map((p, i) => (
+              <Bar key={p} dataKey={p} stackId="cost" name={PART_LABEL[p]} fill={PART_COLOR[p]} radius={i === parts.length - 1 ? [2, 2, 0, 0] : 0} isAnimationActive={false} />
             ))}
           </BarChart>
         </ResponsiveContainer>
@@ -66,19 +65,34 @@ export function TotalsChart({ result }: { result: EngineResult }) {
   );
 }
 
-/** Totals table, every figure clickable. */
-export function TotalsTable({ result, best, onPick }: { result: EngineResult; best?: OptionId | null; onPick?: (o: OptionId) => void }) {
-  const stages = STAGES.filter((s) => OPTIONS.some((o) => result.totals[o]?.[s] != null));
+/** Totals table for the chosen period, every figure clickable. */
+export function TotalsTable({
+  result,
+  horizon,
+  family,
+  best,
+  onPick,
+}: {
+  result: EngineResult;
+  horizon: Horizon;
+  family: boolean;
+  best?: OptionId | null;
+  onPick?: (o: OptionId) => void;
+}) {
+  const b = Object.fromEntries(OPTIONS.map((o) => [o, breakdown(result, o, horizon, family)])) as Record<OptionId, Breakdown>;
+  const parts = PARTS.filter((p) => OPTIONS.some((o) => b[o][p] > 0));
+  const short: Record<Part, string> = { purchase: "Purchase", yearly: "Yearly", tenYear: "10-year", death: "Death" };
   return (
     <table className="w-full text-[13px]">
       <thead>
         <tr className="text-left text-[11px] text-muted">
           <th className="pb-1.5 font-medium">Option</th>
-          {stages.map((s) => (
-            <th key={s} className={`pb-1.5 text-right font-medium ${s === "death" ? "text-faint" : ""}`}>
-              {SHORT[s]}
+          {parts.map((p) => (
+            <th key={p} className="pb-1.5 text-right font-medium">
+              {short[p]}
             </th>
           ))}
+          <th className="pb-1.5 text-right font-semibold text-ink">Total</th>
         </tr>
       </thead>
       <tbody>
@@ -93,25 +107,22 @@ export function TotalsTable({ result, best, onPick }: { result: EngineResult; be
                 o
               )}
             </td>
-            {stages.map((s) => {
-              const rows = result.rows.filter((r) => r.option === o && r.stage === s);
-              return (
-                <td key={s} className="text-right">
-                  {result.totals[o]?.[s] == null ? (
-                    <span className="text-faint">—</span>
-                  ) : (
-                    <CostMoney title={`Option ${o}, ${STAGE_LABEL[s].toLowerCase()}`} rows={rows} amount={result.totals[o]?.[s]} className={s === "death" ? "text-faint" : ""} />
-                  )}
-                </td>
-              );
-            })}
+            {parts.map((p) => (
+              <td key={p} className="text-right">
+                {b[o][p] === 0 ? (
+                  <span className="text-faint">—</span>
+                ) : (
+                  <CostMoney title={`Option ${o}, ${PART_LABEL[p].toLowerCase()}, ${HORIZON_LABEL[horizon].toLowerCase()}`} rows={b[o].rows[p]} amount={b[o][p]} />
+                )}
+              </td>
+            ))}
+            <td className={`tabular text-right font-semibold ${o === best ? "text-edge" : ""}`}>{gbp(b[o].total)}</td>
           </tr>
         ))}
       </tbody>
     </table>
   );
 }
-const SHORT: Record<Stage, string> = { acquire: "Purchase", hold: "Yearly", exit: "Sale", ten_year: "10-year", death: "Death*" };
 
 /** Option D: "Pay £X now or £Y later". */
 export function OptionDTimeline({ result }: { result: EngineResult }) {
