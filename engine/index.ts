@@ -272,7 +272,7 @@ export function runEngine(input: ScenarioInput): EngineResult {
       // Joint ownership with a company: the company is chargeable on the whole dwelling, not just its share.
       const companyOwners = buyers.filter((b) => isCompany(b.node)).map((b) => b.node.label);
       const wholeDwelling =
-        buyers.length > 1 ? `; ${companyOwners.join(" and ")} ${companyOwners.length > 1 ? "are" : "is"} chargeable on the whole dwelling, not just its share` : "";
+        buyers.length > 1 ? `; ${companyOwners.join(" and ")} ${companyOwners.length > 1 ? "are" : "is"} chargeable on the whole dwelling, not just ${companyOwners.length > 1 ? "their" : "its"} share` : "";
       for (const p of priced.filter((p) => p.use === "residential")) {
         if (dwellingsOf(p) === 0 || p.price / dwellingsOf(p) <= ATED_THRESHOLD) continue;
         const r = ated(p.price, dwellingsOf(p), rentalRelief);

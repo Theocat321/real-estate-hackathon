@@ -358,6 +358,17 @@ describe("real investors in A, B and D", () => {
     expect(r.rows.filter((x) => x.tax === "INCOME_TAX_RENT").map((x) => x.entity_id)).toEqual(["inv2"]);
   });
 
+  it("joint ATED note says 'their share' when several companies co-own", () => {
+    const items = [resProperty("h", 1_100_000)];
+    const inv: Investor[] = [
+      { type: "uk_company", label: "Co1", pct: 40 },
+      { type: "uk_company", label: "Co2", pct: 30 },
+      { type: "family_office_uk", label: "FO", pct: 30 },
+    ];
+    const atedRow = run(items, inv, [buildA(packetOf(items), inv)]).rows.find((x) => x.tax === "ATED")!;
+    expect(atedRow.formula).toContain("Co1 and Co2 are chargeable on the whole dwelling, not just their share");
+  });
+
   it("D with family 70 / pension 30 bases trust IHT on 70% of the packet", () => {
     const items = [resProperty("h", 1_000_000)];
     const inv: Investor[] = [{ type: "family_office_uk", label: "FO", pct: 70 }, { type: "uk_pension", label: "Pension", pct: 30 }];
