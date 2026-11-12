@@ -1,0 +1,57 @@
+{
+  "_note": "Engine-local stand-in for fixtures/sample.json until contracts/fixtures land. Same golden values as BRIEF.md.",
+  "scenario": {
+    "scenario_id": "sample",
+    "settlor_nrb_available_gbp": 325000,
+    "properties": [
+      {
+        "id": "p1",
+        "name": "Wireless House",
+        "nation": "england",
+        "use": "commercial",
+        "price_gbp": 890000,
+        "dwellings": 0,
+        "source": { "kind": "auction", "label": "Allsop auction result", "file": "auctions.csv", "row": 1 }
+      },
+      {
+        "id": "p2",
+        "name": "1 Briar Hill",
+        "nation": "england",
+        "use": "commercial",
+        "price_gbp": 515000,
+        "dwellings": 0,
+        "source": { "kind": "auction", "label": "Allsop auction result", "file": "auctions.csv", "row": 2 }
+      }
+    ],
+    "structures": [
+      { "option": "A", "nodes": [
+        { "id": "inv", "kind": "investor", "label": "Investor", "entity_type": "individual" },
+        { "id": "p1", "kind": "property", "label": "Wireless House" },
+        { "id": "p2", "kind": "property", "label": "1 Briar Hill" }
+      ], "edges": [{ "from": "inv", "to": "p1" }, { "from": "inv", "to": "p2" }] },
+      { "option": "B", "nodes": [
+        { "id": "inv", "kind": "investor", "label": "Investor" },
+        { "id": "spv", "kind": "propco", "label": "PropCo Ltd", "entity_type": "company" }
+      ], "edges": [{ "from": "inv", "to": "spv" }] },
+      { "option": "C", "nodes": [
+        { "id": "inv", "kind": "investor", "label": "Investor" },
+        { "id": "fund", "kind": "fund", "label": "JPUT", "entity_type": "unit_trust" },
+        { "id": "spv", "kind": "propco", "label": "PropCo Ltd", "entity_type": "company" }
+      ], "edges": [{ "from": "inv", "to": "fund" }, { "from": "fund", "to": "spv" }] },
+      { "option": "D", "nodes": [
+        { "id": "settlor", "kind": "settlor", "label": "Family (settlor)" },
+        { "id": "trust", "kind": "trust", "label": "Family discretionary trust", "entity_type": "trust" },
+        { "id": "spv", "kind": "propco", "label": "PropCo Ltd", "entity_type": "company" }
+      ], "edges": [{ "from": "settlor", "to": "trust" }, { "from": "trust", "to": "spv" }] }
+    ]
+  },
+  "expected_engine": {
+    "sdlt_by_property": { "p1": 34000, "p2": 15250 },
+    "totals": {
+      "A": { "acquire": 49250 },
+      "B": { "acquire": 49250, "exit": 7025 },
+      "C": { "acquire": 49250, "exit": 7025 },
+      "D": { "acquire": 265250, "exit": 7025, "ten_year": 64800, "death": 432000 }
+    }
+  }
+}
