@@ -1,0 +1,9 @@
+# HANDOFF — Engine + Grok Bot
+
+- **Built:** `runEngine(ScenarioInput) → EngineResult` (`engine/index.ts`), pure TS, 7 rule files in `engine/rules/` (SDLT non-res / residential higher + 17% + non-UK 2%, stamp duty on shares, ATED 2026-27, trust IHT entry / 10-year / death comparator), all GOV.UK-cited. Each `CostRow` has formula, inputs with `SourceRef`, `RuleRef`; per-property rows sit on the property node, D death row is a comparator (tax `IHT_DEATH_COMPARATOR`, not a cost of D).
+- **Endpoint:** `POST /api/engine` (zod-validated contract `ScenarioInput`) → `EngineResult` with `contract_version`; 400 `{error}` on bad input. Golden sample: A 49,250 · B/C +7,025 exit · D 265,250 / 64,800 / 432,000.
+- **Grok Bot:** `npx tsx agent/bot/cli.ts "build packet from <id|address>"` / `"explain option A-D"` (`agent/bot/`, skill in `agent/bot/skill/SKILL.md`). Explanations quote engine figures only; any invented £ falls back to the engine rows.
+- **No API key:** `GROK_TRANSPORT=grokbot` in `.env` sends all Grok calls through the signed-in Grok Bot app (macOS) via `~/.cursor/skills/grok-bot/scripts/grokbot.py` (patched to read the app version; a stale version gives HTTP 401). Teammate: "Structure Studio JSON" (`npx tsx agent/bot/setup-grokbot.ts`).
+- **Run:** Grok Bot.app open, `.env` has `DEMO_MODE=0`, `NEXT_PUBLIC_USE_FIXTURES=false`, then `npm run dev` → http://localhost:3000. Grok answers cache in `fixtures/cache/` (pre-run the demo once for instant replies).
+- **Tests:** `npx vitest run` (65 green): golden fixture, £1.1m dwelling → SDLT 187,000 / ATED 9,450, 6-home packet → SDLT_NONRES on total, bot figure check, Grok Bot reply parsing, brochure line-break verification.
+- **Gaps:** LBTT/LTT not priced (flagged); linked-transactions is a flag, not priced; brochures without a printed price come in uncosted; fixture `per_lot` shares 4,450 vs engine's packet-level 7,025 needs a lead decision. CONTRACT CHANGE REQUEST: `CostRow.comparator?: boolean`.
