@@ -1,0 +1,154 @@
+{
+  "key": "96c1843aba037fb6f5ea609a051daac89e3b6797",
+  "task": "brochure-extract",
+  "model": "grok-4",
+  "created_at": "2026-11-12T21:14:40.735Z",
+  "request": {
+    "system": "You extract facts from a UK property sale document: a single-lot brochure (e.g. an Acuitus or Allsop lot), an auction catalogue or a portfolio schedule listing several properties.\nReturn {\"lots\": [ ... ]} with one entry per distinct property. A one-property brochure gives one entry.\nNever use a total for several properties (portfolio or packet total, total rent) as one lot's value; if a figure is only given as a total, leave it null. Ignore tax, cost or fee figures.\nFor each field of each lot return {\"value\": ..., \"page\": <page number>, \"excerpt\": \"<short text copied EXACTLY, character for character, from that page>\"} or null if the brochure does not state it.\nThe excerpt must be a verbatim substring of the page text (10-120 characters) that contains the value. Never infer, convert or calculate a value that is not printed.\nFields: address (string, without postcode), postcode (string), property_type (string, e.g. \"Retail\", \"Office\", \"Residential flats\"), price_gbp (number, guide or asking price in pounds), price_kind (\"guide\" | \"asking\" | null, not cited),\nrent_pa_gbp (number, current gross rent per annum in pounds), yield_pct (number, e.g. 7.25), size_sqft (number, total floor area in square feet), tenure (string, e.g. \"Freehold\"), dwellings (integer, number of residential units, only if stated).\nEach lot object has exactly these keys. Return JSON: {\"lots\": [{...}, ...]}.",
+    "user": "=== PAGE 1 ===\nS T R U C T U R E S T U D I O 12 November 2026\nA C Q U I S I T I O N S T R U C T U R I N G R E P O R T\n5-lot residential portfolio\nHarpenden, Hertfordshire · Southall, Greater London · Clyde Road, Tottenham · Southsea, Hampshire\nA G G R E G AT E P R I C E\n£949,500 P R E PA R E D F O R\nUK pension fund\nLOTS\n5\nDWELLINGS\n5\nAVERAGE LOT\n£189,900\nTHE LOTS\n01 80 Aysgarth Close AL5 5UG £190,000 02 90 Aysgarth Close AL5 5UG £190,000\n03 Flat 2, 113 Regina Road UB2 5PP £190,000 04 25 Fairweather Close N15 4LL £190,000\n05 162 Manners Road PO4 0BG £189,500\nA B C JOINT LOWEST COST ON PURCHASE\nOptions A, B, C £53,965\nRef. pk-allsop-a1c10a49-n5 Property data: sourced · Structure: simulated · Rules: cited · Decision support, not tax advice\n\n=== PAGE 2 ===\nS T R U C T U R E S T U D I O 5 lots · £949,500\n0 1 · E X E C U T I V E S U M M A R Y\nFour ways to own this portfolio\nWe priced the same 5 lots (£949,500) under four ownership structures for this investor: UK pension fund.\nCosts are UK taxes computed from cited rules; amounts are whole pounds.\nA J O I N T L OW E S T\nBuy each property\ndirectly\nON PURCHASE\n£53,965\nLowest\nEach year\n—\nOn sale\n—\nB J O I N T L OW E S T\nOne UK SPV owns the\nportfolio\nON PURCHASE\n£53,965\nLowest\nEach year\n—\nOn sale\n£4,750\nC J O I N T L OW E S T\nFund (unit trust) owns the\nSPV\nON PURCHASE\n£53,965\nLowest\nEach year\n—\nOn sale\n£4,750\nD\nFamily trust owns the\nSPV\nON PURCHASE\n£178,865\n+£124,900 vs lowest\nEach year\n—\nOn sale\n£4,750\nTax cost by option and stage\n£0\n£100k\n£200k\n£300k\nA £54k B £59k C £59k D £221k\nOn purchase On sale Every 10 years\nOPTION ON PURCHASE ON SALE EVERY 10 YEARS ON DEATH*\nA Buy each property directly £53,965 — — —\nB One UK SPV owns the portfolio £53,965 £4,750 — —\nC Fund (unit trust) owns the SPV £53,965 £4,750 — —\nD Family trust owns the SPV £178,865 £4,750 £37,470 £249,800\n*Inheritance tax if the family held the lots personally. Shown for comparison with the trust option only.\n\n=== PAGE 3 ===\nS T R U C T U R E S T U D I O 5 lots · £949,500\n0 2 · S C H E D U L E O F P R O P E R T I E S\nThe lots\n4 lots matched to allsop-a1c10a49 on residential use in england, priced within ±40% of £190,000, 1 in\npostcode area AL.\nLOT PROPERTY USE PRICE\n01 80 Aysgarth Close\nHarpenden, Hertfordshire · AL5 5UG · Seed lot\nResidential £190,000\nAchieved\n02 90 Aysgarth Close\nHarpenden, Hertfordshire · AL5 5UG\nResidential £190,000\nAchieved\n03 Flat 2, 113 Regina Road\nSouthall, Greater London · UB2 5PP\nResidential £190,000\nAchieved\n04 25 Fairweather Close\nClyde Road, Tottenham · N15 4LL\nResidential £190,000\nAchieved\n05 162 Manners Road\nSouthsea, Hampshire · PO4 0BG\nResidential £189,500\nAchieved\nTotal · 5 lots · 5 dwellings £949,500\nPrices are asking, guide or achieved as marked; every figure traces to a source in the appendix.\n\n=== PAGE 4 ===\nS T R U C T U R E S T U D I O Ownership structures\nA 0 3 · S T R U C T U R E A\nBuy each property directly\nDirect ownership is the simplest route and keeps the pension fund's tax treatment closest to the assets,\nwith no company layer to run. The trade-off is that each residential property has to be bought and later sold\none by one, which means more transaction costs and paperwork on exit.\nON PURCHASE\n£53,965\nEACH YEAR\n—\nON SALE\n—\nEVERY 10 YEARS\n—\nOWNERSHIP CHART\nUK pension fund UK\n80 Aysgarth Close\nSDLT £10,800\n90 Aysgarth Close\nSDLT £10,800\nFlat 2, 113 Regina Road\nSDLT £10,800\n25 Fairweather Close\nSDLT £10,800\n162 Manners Road\nSDLT £10,765\nWHEN TAX NO. AMOUNT\nOn purchase SDLT (higher rates) 5 £53,965\nPOINTS TO NOTE\nNOTE Purchases from the same seller in one deal are linked\ntransactions; SDLT is calculated on the combined price.\n\n=== PAGE 5 ===\nS T R U C T U R E S T U D I O Ownership structures\nB 0 3 · S T R U C T U R E B\nOne UK SPV owns the portfolio\nHolding the residential portfolio in one SPV lets the fund buy and sell it as a single package and could make\na later sale through a share transfer cheaper for a buyer. The trade-off is that a company holding dwellings\nmay face extra residential charges and corporate-level tax that the pension fund would not face holding\ndirectly.\nON PURCHASE\n£53,965\nEACH YEAR\n—\nON SALE\n£4,750\nEVERY 10 YEARS\n—\nOWNERSHIP CHART\nUK pension fund UK\nPropCo Ltd UK\nStamp duty £4,750\n80 Aysgarth Close\nSDLT £10,800\n90 Aysgarth Close\nSDLT £10,800\nFlat 2, 113 Regina Road\nSDLT £10,800\n25 Fairweather Close\nSDLT £10,800\n162 Manners Road\nSDLT £10,765\nWHEN TAX NO. AMOUNT\nOn purchase SDLT (higher rates) 5 £53,965\nOn sale Stamp duty on shares 1 £4,750\nPOINTS TO NOTE\nNOTE Buyer inherits PropCo's history and the properties' original\nbase cost; assumes a debt-free SPV priced at property\nvalue.\n\n=== PAGE 6 ===\nS T R U C T U R E S T U D I O Ownership structures\nC 0 3 · S T R U C T U R E C\nFund (unit trust) owns the SPV\nA unit trust fund over the SPV gives a regulated, tax-efficient wrapper that suits institutional investors like a\npension fund and makes it easier to bring in co-investors later. The trade-off is extra set-up cost, governance\nand eligibility conditions that need to be met and kept up.\nON PURCHASE\n£53,965\nEACH YEAR\n—\nON SALE\n£4,750\nEVERY 10 YEARS\n—\nOWNERSHIP CHART\nUK pension fund UK\nRIF UK\nPropCo Ltd UK\nStamp duty £4,750\n80 Aysgarth Close\nSDLT £10,800\n90 Aysgarth Close\nSDLT £10,800\nFlat 2, 113 Regina Road\nSDLT £10,800\n25 Fairweather Close\nSDLT £10,800\n162 Manners Road\nSDLT £10,765\nWHEN TAX NO. AMOUNT\nOn purchase SDLT (higher rates) 5 £53,965\nOn sale Stamp duty on shares 1 £4,750\nPOINTS TO NOTE\nNOTE Buyer inherits PropCo's history and the properties' original\nbase cost; assumes a debt-free SPV priced at property\nvalue.\n\n=== PAGE 7 ===\nS T R U C T U R E S T U D I O Ownership structures\nD 0 3 · S T R U C T U R E D\nFamily trust owns the SPV\nA discretionary trust is built for family succession planning, so it fits a pension fund investor poorly.\nTrust-level inheritance tax charges and the extra administration add cost without any clear benefit for this\ninvestor.\nON PURCHASE\n£178,865\nEACH YEAR\n—\nON SALE\n£4,750\nEVERY 10 YEARS\n£37,470\nOWNERSHIP CHART\nFamily (settlor) UK\nDiscretionary trust UK\nIHT entry £124,900\nIHT 10-yr £37,470\nPropCo Ltd UK\nStamp duty £4,750\n80 Aysgarth Close\nSDLT £10,800\n90 Aysgarth Close\nSDLT £10,800\nFlat 2, 113 Regina Road\nSDLT £10,800\n25 Fairweather Close\nSDLT £10,800\n162 Manners Road\nSDLT £10,765\nWHEN TAX NO. AMOUNT\nOn purchase SDLT (higher rates) 5 £53,965\nOn sale Stamp duty on shares 1 £4,750\nOn purchase IHT entry charge 1 £124,900\nEvery 10 years IHT 10-year charge 1 £37,470\nOn death* IHT on death (comparator) 1 £249,800\nPOINTS TO NOTE\nREVIEW A family trust needs a family to settle it. None of these\ninvestors is a family, so treat D as illustrative.\nNOTE Buyer inherits PropCo's history and the properties' original\nbase cost; assumes a debt-free SPV priced at property\nvalue.\nREVIEW The settlor's residence and the post-April 2025\ninheritance-tax rules decide whether the trust is in scope.\nREVIEW The nil-rate band may already be used by gifts in the last\n7 years.\nREVIEW Investment property does not qualify for business relief.\nNOTE The trust must be registered on HMRC's Trust Registration\nService.\nREVIEW UK homes held via an offshore company are looked\nthrough for inheritance tax.\n\n=== PAGE 8 ===\nS T R U C T U R E S T U D I O Appendix\n0 4 · A P P E N D I X\nSources and rules\nEvery property figure and every tax amount in this report traces to one of the references below.\nTax rules applied\nsdlt_res 2026-27 https://www.gov.uk/stamp-duty-land-tax\nstamp_duty_shares 2026-27 https://www.gov.uk/hmrc-internal-manuals/stamp-taxes-shares-manual/stsm013010\niht_entry 2026-27 https://www.gov.uk/guidance/trusts-and-inheritance-tax\niht_ten_year 2026-27 https://www.gov.uk/hmrc-internal-manuals/inheritance-tax-manual/ihtm42081\niht_death_comparator 2026-27 https://www.gov.uk/inheritance-tax\nProperty data\nAuction auction-results.csv · row 54 · allsop-a1c10a49 https://www.allsop.co.uk/api/lot/82c88a94-6ee3-11f1-9427-0242ac110002\nAuction auction-results.csv · row 378 · allsop-e4a03e6f https://www.allsop.co.uk/api/lot/386f4fd0-b0e4-11f1-8ece-0242ac110002\nAuction auction-results.csv · row 836 · allsop-21dd34b6 https://www.allsop.co.uk/api/lot/89bc01f4-1d31-11f1-94d2-0242ac110002\nAuction auction-results.csv · row 100 · allsop-707c5c22 https://www.allsop.co.uk/api/lot/4458b27e-52d3-11f1-84f8-0242ac110002\nAuction auction-results.csv · row 3 · allsop-96854282 https://www.allsop.co.uk/api/lot/57a97a9a-0105-11f1-972a-0242ac110002\nIMPORTANT NOTICE\nThis report is decision support, not tax advice. Property data is sourced from the listed files; ownership structures are simulated; tax amounts are\ncomputed from the cited rules as of the stated tax year. Confirm any structure with a qualified adviser before acting."
+  },
+  "response": {
+    "lots": [
+      {
+        "address": {
+          "value": "80 Aysgarth Close, Harpenden, Hertfordshire",
+          "page": 3,
+          "excerpt": "Harpenden, Hertfordshire · AL5 5UG · Seed lot"
+        },
+        "postcode": {
+          "value": "AL5 5UG",
+          "page": 3,
+          "excerpt": "Harpenden, Hertfordshire · AL5 5UG · Seed lot"
+        },
+        "property_type": {
+          "value": "Residential",
+          "page": 3,
+          "excerpt": "Residential £190,000"
+        },
+        "price_gbp": {
+          "value": 190000,
+          "page": 1,
+          "excerpt": "01 80 Aysgarth Close AL5 5UG £190,000"
+        },
+        "price_kind": null,
+        "rent_pa_gbp": null,
+        "yield_pct": null,
+        "size_sqft": null,
+        "tenure": null,
+        "dwellings": null
+      },
+      {
+        "address": {
+          "value": "90 Aysgarth Close, Harpenden, Hertfordshire",
+          "page": 3,
+          "excerpt": "02 90 Aysgarth Close"
+        },
+        "postcode": {
+          "value": "AL5 5UG",
+          "page": 1,
+          "excerpt": "02 90 Aysgarth Close AL5 5UG £190,000"
+        },
+        "property_type": {
+          "value": "Residential",
+          "page": 3,
+          "excerpt": "Residential £190,000"
+        },
+        "price_gbp": {
+          "value": 190000,
+          "page": 1,
+          "excerpt": "02 90 Aysgarth Close AL5 5UG £190,000"
+        },
+        "price_kind": null,
+        "rent_pa_gbp": null,
+        "yield_pct": null,
+        "size_sqft": null,
+        "tenure": null,
+        "dwellings": null
+      },
+      {
+        "address": {
+          "value": "Flat 2, 113 Regina Road, Southall, Greater London",
+          "page": 3,
+          "excerpt": "Southall, Greater London · UB2 5PP"
+        },
+        "postcode": {
+          "value": "UB2 5PP",
+          "page": 1,
+          "excerpt": "03 Flat 2, 113 Regina Road UB2 5PP £190,000"
+        },
+        "property_type": {
+          "value": "Residential",
+          "page": 3,
+          "excerpt": "Residential £190,000"
+        },
+        "price_gbp": {
+          "value": 190000,
+          "page": 1,
+          "excerpt": "03 Flat 2, 113 Regina Road UB2 5PP £190,000"
+        },
+        "price_kind": null,
+        "rent_pa_gbp": null,
+        "yield_pct": null,
+        "size_sqft": null,
+        "tenure": null,
+        "dwellings": null
+      },
+      {
+        "address": {
+          "value": "25 Fairweather Close, Clyde Road, Tottenham",
+          "page": 3,
+          "excerpt": "Clyde Road, Tottenham · N15 4LL"
+        },
+        "postcode": {
+          "value": "N15 4LL",
+          "page": 1,
+          "excerpt": "04 25 Fairweather Close N15 4LL £190,000"
+        },
+        "property_type": {
+          "value": "Residential",
+          "page": 3,
+          "excerpt": "Residential £190,000"
+        },
+        "price_gbp": {
+          "value": 190000,
+          "page": 1,
+          "excerpt": "04 25 Fairweather Close N15 4LL £190,000"
+        },
+        "price_kind": null,
+        "rent_pa_gbp": null,
+        "yield_pct": null,
+        "size_sqft": null,
+        "tenure": null,
+        "dwellings": null
+      },
+      {
+        "address": {
+          "value": "162 Manners Road, Southsea, Hampshire",
+          "page": 3,
+          "excerpt": "Southsea, Hampshire · PO4 0BG"
+        },
+        "postcode": {
+          "value": "PO4 0BG",
+          "page": 1,
+          "excerpt": "05 162 Manners Road PO4 0BG £189,500"
+        },
+        "property_type": {
+          "value": "Residential",
+          "page": 3,
+          "excerpt": "Residential £189,500"
+        },
+        "price_gbp": {
+          "value": 189500,
+          "page": 1,
+          "excerpt": "05 162 Manners Road PO4 0BG £189,500"
+        },
+        "price_kind": null,
+        "rent_pa_gbp": null,
+        "yield_pct": null,
+        "size_sqft": null,
+        "tenure": null,
+        "dwellings": null
+      }
+    ]
+  }
+}

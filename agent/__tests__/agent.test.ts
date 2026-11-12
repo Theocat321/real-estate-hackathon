@@ -166,6 +166,33 @@ describe("extract", () => {
     expect(numbersIn("£1.25m and 3,210 sq ft")).toEqual([1250000, 3210]);
   });
 
+  it("reads several lots from one document, each with its own sources", async () => {
+    const pages = [
+      ["Schedule of lots", "Lot 1: 52 High Beech Road, Luton LU3 3DD", "Sold for £260,000"],
+      ["Lot 2: 12 Jennett Road, Croydon CR0 4NR", "Sold for £262,000", "Total of all lots £522,000"],
+    ];
+    const reply = {
+      lots: [
+        { address: { value: "52 High Beech Road, Luton", page: 1, excerpt: "52 High Beech Road, Luton LU3 3DD" }, price_gbp: { value: 260000, page: 1, excerpt: "Sold for £260,000" } },
+        { address: { value: "12 Jennett Road, Croydon", page: 2, excerpt: "12 Jennett Road, Croydon CR0 4NR" }, price_gbp: { value: 262000, page: 2, excerpt: "Sold for £262,000" } },
+      ],
+    };
+    const res = await extractUpload("schedule.pdf", makePdf(pages), "application/pdf", fake(JSON.stringify(reply)));
+    expect(res.properties.map((p) => [p.address, p.price_gbp?.value, p.price_gbp?.source.page])).toEqual([
+      ["52 High Beech Road, Luton", 260000, 1],
+      ["12 Jennett Road, Croydon", 262000, 2],
+    ]);
+    expect(new Set(res.properties.map((p) => p.id)).size).toBe(2);
+  });
+
+  it("accepts an address printed in parts across lines, but not invented parts", () => {
+    const pages = [{ num: 3, text: "02 80 Aysgarth Close\nHarpenden, Hertfordshire · AL5 5UG · Seed lot\n£190,000" }];
+    const w: string[] = [];
+    const ok = verifyCited("address", { value: "80 Aysgarth Close, Harpenden, Hertfordshire", page: 3, excerpt: "Harpenden, Hertfordshire · AL5 5UG" }, pages, w);
+    expect(ok?.excerpt).toBe("80 Aysgarth Close Harpenden, Hertfordshire");
+    expect(verifyCited("address", { value: "80 Aysgarth Close, St Albans", page: 3, excerpt: "Harpenden" }, pages, w)).toBeNull();
+  });
+
   it("brochure with no verifiable address falls back to file name with warning", () => {
     const r = brochureToProperty("x.pdf", "abc", [{ num: 1, text: "nothing" }], {});
     expect(r.property.address).toBe("x.pdf");

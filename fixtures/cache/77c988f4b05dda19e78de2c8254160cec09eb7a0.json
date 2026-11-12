@@ -1,0 +1,42 @@
+{
+  "key": "77c988f4b05dda19e78de2c8254160cec09eb7a0",
+  "task": "brochure-extract",
+  "model": "grok-4",
+  "created_at": "2026-11-12T21:13:22.362Z",
+  "request": {
+    "system": "You extract facts from a UK commercial/residential property sale brochure (e.g. an Acuitus or Allsop lot).\nFor each field return {\"value\": ..., \"page\": <page number>, \"excerpt\": \"<short text copied EXACTLY, character for character, from that page>\"} or null if the brochure does not state it.\nThe excerpt must be a verbatim substring of the page text (10-120 characters) that contains the value. Never infer, convert or calculate a value that is not printed.\nFields: address (string, without postcode), postcode (string), property_type (string, e.g. \"Retail\", \"Office\", \"Residential flats\"), price_gbp (number, guide or asking price in pounds), price_kind (\"guide\" | \"asking\" | null, not cited),\nrent_pa_gbp (number, current gross rent per annum in pounds), yield_pct (number, e.g. 7.25), size_sqft (number, total floor area in square feet), tenure (string, e.g. \"Freehold\"), dwellings (integer, number of residential units, only if stated).\nReturn JSON with exactly these keys.",
+    "user": "=== PAGE 1 ===\nStructure Studio · packet pk-allsop-6392cf9c-n5\n4 lots matched to allsop-6392cf9c on commercial use in england, priced within ±40% of £890,000.\nPACKET\nWireless House, Westfield Industrial Estate, Midsomer Norton, Avon, BA3 4BS (seed) commercial £890,000 —\n59-61 Highgate High Street, Highgate, London, N6 5JY commercial £892,500 —\nHaymarket Towers, 33 Humberstone Gate, Leicester, Leicestershire, LE1 1WA commercial £885,000 —\n1 Northbrook Street, Newbury, Berkshire, RG14 1DJ commercial £900,000 —\n8 Cornhill & 27 Durngate Street, Dorchester, Dorset, DT1 1BA commercial £900,000 —\nTotal · 0 dwellings · rent £0 p.a. £4,467,500 —\nSTRUCTURES\nA · Buy each property directly\nFamily office (non-UK) [Other]\nWireless House\nSDLT_NONRES £34,000\n59-61 Highgate High Street\nSDLT_NONRES £34,125\nHaymarket Towers\nSDLT_NONRES £33,750\n1 Northbrook Street\nSDLT_NONRES £34,500\n8 Cornhill & 27 Durngate Street\nSDLT_NONRES £34,500\nB · One UK SPV owns the portfolio\nFamily office (non-UK) [Other]\nPropCo Ltd [UK]\nSTAMP_DUTY_SHARES £22,340\nWireless House\nSDLT_NONRES £34,000\n59-61 Highgate High Street\nSDLT_NONRES £34,125\nHaymarket Towers\nSDLT_NONRES £33,750\n1 Northbrook Street\nSDLT_NONRES £34,500\n8 Cornhill & 27 Durngate Street\nSDLT_NONRES £34,500\nC · Fund (unit trust) owns the SPV\nFamily office (non-UK) [Other]\nJPUT [Jersey]\nPropCo Ltd [UK]\nSTAMP_DUTY_SHARES £22,340\nWireless House\nSDLT_NONRES £34,000\n59-61 Highgate High Street\nSDLT_NONRES £34,125\nHaymarket Towers\nSDLT_NONRES £33,750\n1 Northbrook Street\nSDLT_NONRES £34,500\n8 Cornhill & 27 Durngate Street\nSDLT_NONRES £34,500\nD · Family trust owns the SPV\nFamily office (non-UK) (settlor) [Other]\nDiscretionary trust [UK]\nIHT_ENTRY £828,500 · IHT_TEN_YEAR £248,550\nPropCo Ltd [UK]\nSTAMP_DUTY_SHARES £22,340\nWireless House\nSDLT_NONRES £34,000\n59-61 Highgate High Street\nSDLT_NONRES £34,125\nHaymarket Towers\nSDLT_NONRES £33,750\n1 Northbrook Street\nSDLT_NONRES £34,500\n8 Cornhill & 27 Durngate Street\nSDLT_NONRES £34,500\nTOTALS BY OPTION AND STAGE (£)\nacquire exit ten year death (comparator)\nA £170,875 — — —\nB £170,875 £22,340 — —\nC £170,875 £22,340 — —\nD £999,375 £22,340 £248,550 £1,657,000\nFLAGS\n[A] INFO: Non-UK investors pay UK tax on gains from UK property, including on selling shares in a property-rich company.\n[A] INFO: Purchases from the same seller in one deal are linked transactions; SDLT is calculated on the combined price.\n[B] INFO: Non-UK investors pay UK tax on gains from UK property, including on selling shares in a property-rich company.\n[B] INFO: Buyer inherits PropCo's history and the properties' original base cost; assumes a debt-free SPV priced at property value.\n[C] INFO: Non-UK investors pay UK tax on gains from UK property, including on selling shares in a property-rich company.\n[C] INFO: Buyer inherits PropCo's history and the properties' original base cost; assumes a debt-free SPV priced at property value.\n[C] REVIEW: The JPUT needs a transparency election (all investors consent, irrevocable) or an exemption election (within 12 months of acquisition).\n[D] INFO: Non-UK investors pay UK tax on gains from UK property, including on selling shares in a property-rich company.\n[D] INFO: Buyer inherits PropCo's history and the properties' original base cost; assumes a debt-free SPV priced at property value.\n[D] REVIEW: The settlor's residence and the post-April 2025 inheritance-tax rules decide whether the trust is in scope.\n[D] REVIEW: The nil-rate band may already be used by gifts in the last 7 years.\n[D] REVIEW: Investment property does not qualify for business relief.\n[D] INFO: The trust must be registered on HMRC's Trust Registration Service.\nSOURCES AND RULES\nauction: auction-results.csv · row 2 · allsop-6392cf9c · https://www.allsop.co.uk/api/lot/7daca700-1193-11f1-a689-0242ac110002\nauction: auction-results.csv · row 52 · allsop-b63a2bdb · https://www.allsop.co.uk/api/lot/cf68f104-a5e3-11f1-8444-0242ac110002\nauction: auction-results.csv · row 479 · allsop-a0c68665 · https://www.allsop.co.uk/api/lot/5a8fd6bc-ad0a-11f1-a8e8-0242ac110002\nauction: auction-results.csv · row 834 · allsop-b7b601ec · https://www.allsop.co.uk/api/lot/87111922-0b38-11f1-93a3-0242ac110002\nauction: auction-results.csv · row 252 · allsop-c88c66b6 · https://www.allsop.co.uk/api/lot/b092b91a-f15f-11f0-a2ce-0242ac110002\nrule sdlt_nonres (as of 2026-27): https://www.gov.uk/stamp-duty-land-tax\nrule stamp_duty_shares (as of 2026-27): https://www.gov.uk/hmrc-internal-manuals/stamp-taxes-shares-manual/stsm013010\nrule iht_entry (as of 2026-27): https://www.gov.uk/guidance/trusts-and-inheritance-tax\nrule iht_ten_year (as of 2026-27): https://www.gov.uk/hmrc-internal-manuals/inheritance-tax-manual/ihtm42081\nrule iht_death_comparator (as of 2026-27): https://www.gov.uk/inheritance-tax\nProperty data: sourced · Structure: simulated · Rules: cited · Decision support, not tax advice"
+  },
+  "response": {
+    "address": {
+      "value": "Wireless House, Westfield Industrial Estate, Midsomer Norton, Avon",
+      "page": 1,
+      "excerpt": "Wireless House, Westfield Industrial Estate, Midsomer Norton, Avon, BA3 4BS (seed)"
+    },
+    "postcode": {
+      "value": "BA3 4BS",
+      "page": 1,
+      "excerpt": "Wireless House, Westfield Industrial Estate, Midsomer Norton, Avon, BA3 4BS (seed)"
+    },
+    "property_type": {
+      "value": "Commercial",
+      "page": 1,
+      "excerpt": "Midsomer Norton, Avon, BA3 4BS (seed) commercial £890,000"
+    },
+    "price_gbp": {
+      "value": 4467500,
+      "page": 1,
+      "excerpt": "Total · 0 dwellings · rent £0 p.a. £4,467,500"
+    },
+    "price_kind": null,
+    "rent_pa_gbp": null,
+    "yield_pct": null,
+    "size_sqft": null,
+    "tenure": null,
+    "dwellings": {
+      "value": 0,
+      "page": 1,
+      "excerpt": "Total · 0 dwellings · rent £0 p.a. £4,467,500"
+    }
+  }
+}

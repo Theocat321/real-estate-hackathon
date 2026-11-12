@@ -85,12 +85,21 @@ export const BrochureSchema = z.object({
 });
 export type BrochureFields = z.infer<typeof BrochureSchema>;
 
-const BROCHURE_SYSTEM = `You extract facts from a UK commercial/residential property sale brochure (e.g. an Acuitus or Allsop lot).
-For each field return {"value": ..., "page": <page number>, "excerpt": "<short text copied EXACTLY, character for character, from that page>"} or null if the brochure does not state it.
+/**
+ * A PDF can describe one property (a lot brochure) or several (an auction catalogue, a portfolio
+ * schedule, a Structure Studio report). Grok returns {"lots": [...]}; a bare single-lot object is
+ * still accepted for older cached replies.
+ */
+export const BrochureDocSchema = z.union([z.object({ lots: z.array(BrochureSchema).min(1).max(20) }), BrochureSchema.transform((lot) => ({ lots: [lot] }))]);
+
+const BROCHURE_SYSTEM = `You extract facts from a UK property sale document: a single-lot brochure (e.g. an Acuitus or Allsop lot), an auction catalogue or a portfolio schedule listing several properties.
+Return {"lots": [ ... ]} with one entry per distinct property. A one-property brochure gives one entry.
+Never use a total for several properties (portfolio or packet total, total rent) as one lot's value; if a figure is only given as a total, leave it null. Ignore tax, cost or fee figures.
+For each field of each lot return {"value": ..., "page": <page number>, "excerpt": "<short text copied EXACTLY, character for character, from that page>"} or null if the brochure does not state it.
 The excerpt must be a verbatim substring of the page text (10-120 characters) that contains the value. Never infer, convert or calculate a value that is not printed.
 Fields: address (string, without postcode), postcode (string), property_type (string, e.g. "Retail", "Office", "Residential flats"), price_gbp (number, guide or asking price in pounds), price_kind ("guide" | "asking" | null, not cited),
 rent_pa_gbp (number, current gross rent per annum in pounds), yield_pct (number, e.g. 7.25), size_sqft (number, total floor area in square feet), tenure (string, e.g. "Freehold"), dwellings (integer, number of residential units, only if stated).
-Return JSON with exactly these keys.`;
+Each lot object has exactly these keys. Return JSON: {"lots": [{...}, ...]}.`;
 
 const MAX_PAGE_CHARS = 6000;
 
@@ -137,6 +146,30 @@ function textSupported(value: string, excerpt: string): boolean {
 type CitedValue = { value: string | number; page: number; excerpt: string };
 
 /** Whitespace-normalised page text around a verbatim (case-insensitive) occurrence of value, max 200 chars; null if absent. */
+/** Excerpt covering every comma-separated part of `value`, if all appear on the page within 200 characters. */
+export function excerptSpanning(pageText: string, value: string): string | null {
+  const parts = value.split(",").map((x) => norm(x).toLowerCase()).filter((x) => x.length >= 2);
+  if (parts.length < 2) return null;
+  const text = norm(pageText);
+  const lower = text.toLowerCase();
+  let best: [number, number] | null = null;
+  // Anchor on each occurrence of the first part; find the following parts after it.
+  for (let i = lower.indexOf(parts[0]); i >= 0; i = lower.indexOf(parts[0], i + 1)) {
+    let end = i + parts[0].length;
+    let ok = true;
+    for (const part of parts.slice(1)) {
+      const j = lower.indexOf(part, end);
+      if (j < 0 || j - end > 80) {
+        ok = false;
+        break;
+      }
+      end = j + part.length;
+    }
+    if (ok && end - i <= 200 && (!best || end - i < best[1] - best[0])) best = [i, end];
+  }
+  return best ? text.slice(best[0], best[1]) : null;
+}
+
 export function excerptAround(pageText: string, value: string): string | null {
   const text = norm(pageText);
   const v = norm(value);
@@ -167,7 +200,10 @@ export function verifyCited(field: string, c: CitedValue | null | undefined, pag
     // Grok's excerpt often stops at a PDF line break mid-value (e.g. an address split over two lines).
     // If the value itself is verbatim on the cited page, keep it and widen the excerpt to cover it.
     const widened = excerptAround(page.text, c.value);
-    if (widened) return { ...c, excerpt: widened };
+    if (widened) return { ...c, excerpt: widened };    // Addresses are often printed as parts on separate lines ("80 Aysgarth Close" / "Harpenden, Hertfordshire").
+    // Keep the value if every comma-separated part is verbatim on the page, close together.
+    const spanned = excerptSpanning(page.text, c.value);
+    if (spanned) return { ...c, excerpt: spanned };
   }
   if (!ok) {
     warnings.push(`Dropped ${field}: value ${JSON.stringify(c.value)} not present in excerpt "${c.excerpt}" (page ${c.page})`);
@@ -225,9 +261,16 @@ export async function extractBrochure(file: string, data: Uint8Array, transport?
   const pages = await pdfPages(data);
   const warnings: string[] = [];
   if (pages.every((p) => p.text.trim().length < 20)) warnings.push("PDF has little or no text layer (scanned?); extraction may be empty");
-  const fields = await grokJson({ task: "brochure-extract", system: BROCHURE_SYSTEM, user: brochurePrompt(pages), schema: BrochureSchema }, transport);
-  const r = brochureToProperty(file, fileSha, pages, fields);
-  return { properties: [r.property], investors: [], warnings: [...warnings, ...r.warnings] };
+  const doc = await grokJson({ task: "brochure-extract", system: BROCHURE_SYSTEM, user: brochurePrompt(pages), schema: BrochureDocSchema }, transport);
+  const properties: Property[] = [];
+  doc.lots.forEach((fields, i) => {
+    const r = brochureToProperty(file, fileSha, pages, fields);
+    if (doc.lots.length > 1) r.property.id = `brochure-${fileSha.slice(0, 10)}-${i + 1}`;
+    properties.push(r.property);
+    const tag = doc.lots.length > 1 ? `${r.property.address}: ` : "";
+    warnings.push(...r.warnings.map((w) => tag + w));
+  });
+  return { properties, investors: [], warnings };
 }
 
 // ---------------------------------------------------------------------------

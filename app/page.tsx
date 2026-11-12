@@ -12,7 +12,7 @@ export default function StartPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
-  const [upload, setUpload] = useState<{ name: string; properties: Property[] } | null>(null);
+  const [upload, setUpload] = useState<{ names: string[]; properties: Property[] } | null>(null);
   const [drag, setDrag] = useState(false);
   const [typed, setTyped] = useState<Record<string, string>>({});
   const fileRef = useRef<HTMLInputElement>(null);
@@ -45,29 +45,44 @@ export default function StartPage() {
 
   function buildPacket() {
     if (!upload) return;
-    const packet = packetFromUpload(withTypedPrices(upload.properties, upload.name), upload.name);
+    const packet = packetFromUpload(withTypedPrices(upload.properties, uploadName(upload.names)), uploadName(upload.names));
     savePacket(packet);
     router.push(`/packet/${encodeURIComponent(packet.id)}`);
   }
 
-  async function onFile(file: File) {
-    setBusy(`Reading ${file.name}…`);
+  const appendRef = useRef(false);
+
+  /** Read one or more files in turn (Grok reads brochures one at a time); failures become warnings. */
+  async function onFiles(files: File[], append = false) {
+    if (files.length === 0) return;
     setError(null);
-    setUpload(null);
-    setTyped({});
-    try {
-      const res = await extract(file);
-      setWarnings(res.warnings);
-      if (res.properties.length === 0) setError(`No properties found in ${file.name}. Upload a listings or auction CSV, or a sale brochure PDF.`);
-      else setUpload({ name: file.name, properties: res.properties });
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(null);
+    const props: Property[] = append && upload ? [...upload.properties] : [];
+    const names: string[] = append && upload ? [...upload.names] : [];
+    const warns: string[] = append ? [...warnings] : [];
+    if (!append) {
+      setUpload(null);
+      setTyped({});
     }
+    for (const [i, file] of files.entries()) {
+      setBusy(files.length > 1 ? `Reading ${i + 1} of ${files.length}: ${file.name}…` : `Reading ${file.name}…`);
+      try {
+        const res = await extract(file);
+        const tag = files.length > 1 || append ? `${file.name}: ` : "";
+        warns.push(...res.warnings.map((w) => tag + w));
+        if (res.properties.length === 0) warns.push(`${file.name}: no properties found`);
+        for (const p of res.properties) if (!props.some((q) => q.id === p.id)) props.push(p);
+        names.push(file.name);
+      } catch (e) {
+        warns.push(`${file.name}: ${(e as Error).message}`);
+      }
+    }
+    setBusy(null);
+    setWarnings(warns);
+    if (props.length === 0) setError("No properties found. Upload a listings or auction CSV, or sale brochure PDFs.");
+    else setUpload({ names, properties: props });
   }
 
-  const priced = upload ? withTypedPrices(upload.properties, upload.name) : [];
+  const priced = upload ? withTypedPrices(upload.properties, uploadName(upload.names)) : [];
   const total = priced.reduce((s, p) => s + (p.price_gbp?.value ?? 0), 0);
   const missing = priced.filter((p) => !p.price_gbp).length;
 
@@ -94,8 +109,7 @@ export default function StartPage() {
             onDrop={(e) => {
               e.preventDefault();
               setDrag(false);
-              const f = e.dataTransfer.files[0];
-              if (f) void onFile(f);
+              void onFiles(Array.from(e.dataTransfer.files));
             }}
             onClick={() => fileRef.current?.click()}
             className={`mt-10 flex cursor-pointer items-center gap-5 rounded-md border bg-sheet px-6 py-9 transition-colors ${
@@ -105,7 +119,7 @@ export default function StartPage() {
             <UploadGlyph />
             <div>
               <p className="text-[17px] font-semibold">{busy ?? "Upload your properties"}</p>
-              <p className="mt-0.5 text-[14px] text-muted">Drop a listings or auction CSV, or a sale brochure PDF. Or click to choose one.</p>
+              <p className="mt-0.5 text-[14px] text-muted">Drop a listings or auction CSV, or one or more sale brochure PDFs. Or click to choose.</p>
             </div>
           </div>
         )}
@@ -113,17 +127,19 @@ export default function StartPage() {
           ref={fileRef}
           type="file"
           accept=".pdf,.csv,.txt"
+          multiple
           className="hidden"
           onChange={(e) => {
-            const f = e.target.files?.[0];
+            const files = Array.from(e.target.files ?? []);
             e.target.value = "";
-            if (f) void onFile(f);
+            void onFiles(files, appendRef.current);
+            appendRef.current = false;
           }}
         />
 
         {upload && (
           <section className="edged mt-10 rounded-md bg-sheet p-6">
-            <p className="text-[13px] font-medium text-edge">{upload.name}</p>
+            <p className="text-[13px] font-medium text-edge">{upload.names.join(", ")}</p>
             <h2 className="wide mt-1 text-[24px] font-bold leading-tight tracking-tight">
               {upload.properties.length} {upload.properties.length === 1 ? "property" : "properties"}, <span className="tabular">{gbp(total)}</span>
             </h2>
@@ -168,8 +184,18 @@ export default function StartPage() {
               <button onClick={buildPacket} className="rounded-md bg-ink px-5 py-3 text-[15px] font-semibold text-sheet transition-colors hover:bg-ink-soft">
                 Build the packet
               </button>
+              <button
+                onClick={() => {
+                  appendRef.current = true;
+                  fileRef.current?.click();
+                }}
+                disabled={!!busy}
+                className="rounded-md border border-ink px-4 py-3 text-[14px] font-semibold transition-colors hover:bg-ink hover:text-sheet disabled:opacity-50"
+              >
+                {busy ?? "Add more files"}
+              </button>
               <button onClick={() => fileRef.current?.click()} className="text-[14px] font-medium text-muted underline decoration-rule underline-offset-4 hover:text-ink">
-                Upload a different file
+                Start over with different files
               </button>
             </div>
           </section>
@@ -207,6 +233,11 @@ function UploadGlyph() {
       <rect x="13" y="26" width="9" height="6" fill="none" stroke="var(--color-edge)" strokeWidth="1.5" />
     </svg>
   );
+}
+
+/** "brochure.pdf", or "3 files" for several. */
+function uploadName(names: string[]): string {
+  return names.length === 1 ? names[0] : `${names.length} files`;
 }
 
 /** Generic family-trust chain, drawn as the hero. Illustration only: no figures. */
