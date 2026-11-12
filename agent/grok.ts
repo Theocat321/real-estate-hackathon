@@ -113,12 +113,21 @@ function validate<S extends z.ZodType>(schema: S, raw: string): { ok: true; data
 /** Injectable transport so tests never touch the network. */
 export type Transport = (messages: { role: "system" | "user" | "assistant"; content: string }[]) => Promise<string>;
 
-const defaultTransport: Transport = async (messages) => {
+const apiTransport: Transport = async (messages) => {
   const res = await getClient().chat.completions.create(
     { model: grokModel(), messages, response_format: { type: "json_object" }, temperature: 0 },
     { timeout: GROK_TIMEOUT_MS },
   );
   return res.choices[0]?.message?.content ?? "";
+};
+
+/** GROK_TRANSPORT=grokbot routes calls through the Grok Bot desktop app (macOS) instead of XAI_API_KEY. */
+const defaultTransport: Transport = async (messages) => {
+  if (process.env.GROK_TRANSPORT === "grokbot") {
+    const { grokBotTransport } = await import("./grokbot-transport");
+    return grokBotTransport(messages);
+  }
+  return apiTransport(messages);
 };
 
 export async function grokJson<S extends z.ZodType>(req: GrokRequest<S>, transport: Transport = defaultTransport): Promise<z.output<S>> {
