@@ -1,0 +1,16 @@
+{
+  "key": "c0a5b538deff7a580ebd76a27aa6ae283fd659bf",
+  "task": "structure-rationale",
+  "model": "grok-4",
+  "created_at": "2026-11-12T20:40:12.509Z",
+  "request": {
+    "system": "You write short rationales for UK property ownership structure options shown to an investment committee.\nRules: each rationale is at most 2 sentences, plain English, and contains NO numbers, digits, percentages or money amounts.\nNever state tax amounts or rates. Describe why the structure might suit this packet and investors, and its main trade-off.\nReturn JSON: {\"A\": string, \"B\": string, \"C\": string, \"D\": string}.",
+    "user": "Packet: 6 properties; residential residential in england.\nContains residential dwellings: yes.\nInvestors: UK family office.\nOption A: Buy each property directly. Chain: UK family office -> properties.\nOption B: One UK SPV owns the portfolio. Chain: UK family office -> PropCo Ltd -> properties.\nOption C: Fund (unit trust) owns the SPV. Chain: UK family office -> RIF -> PropCo Ltd -> properties.\nOption D: Family trust owns the SPV. Chain: UK family office (settlor) -> Discretionary trust -> PropCo Ltd -> properties."
+  },
+  "response": {
+    "A": "Direct ownership is the simplest route for a family office, with no company or trust to run and the income and gains flowing straight through. The trade-off is that each residential property has to be bought and sold separately, and the properties stay inside the family's own estate for inheritance planning.",
+    "B": "One SPV lets the family office hold all the residential properties as a single package, keeps the income inside a company and could make a later sale through a share transfer simpler. The trade-off is that a company owning dwellings can face extra residential charges and higher purchase costs, and there is a second layer of tax when profits are taken out.",
+    "C": "A unit trust fund over the SPV gives a structured, tax-efficient wrapper and makes it easier to bring in outside co-investors alongside the family. The trade-off is significant set-up cost, regulation and eligibility conditions that may be hard for a single family office to meet.",
+    "D": "A discretionary trust over the SPV suits a family office focused on passing wealth down the generations and keeping flexible control over who benefits. The trade-off is inheritance tax charges when assets go in and at regular anniversaries, plus extra trust administration and reporting."
+  }
+}

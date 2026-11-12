@@ -1,0 +1,16 @@
+{
+  "key": "443e8071e094af0d53ae62e8e06a13f31cd3b7bc",
+  "task": "structure-rationale",
+  "model": "grok-4",
+  "created_at": "2026-11-12T20:40:27.329Z",
+  "request": {
+    "system": "You write short rationales for UK property ownership structure options shown to an investment committee.\nRules: each rationale is at most 2 sentences, plain English, and contains NO numbers, digits, percentages or money amounts.\nNever state tax amounts or rates. Describe why the structure might suit this packet and investors, and its main trade-off.\nReturn JSON: {\"A\": string, \"B\": string, \"C\": string, \"D\": string}.",
+    "user": "Packet: 5 properties; residential residential in england.\nContains residential dwellings: yes.\nInvestors: Family office (non-UK).\nOption A: Buy each property directly. Chain: Family office (non-UK) -> properties.\nOption B: One UK SPV owns the portfolio. Chain: Family office (non-UK) -> PropCo Ltd -> properties.\nOption C: Fund (unit trust) owns the SPV. Chain: Family office (non-UK) -> JPUT -> PropCo Ltd -> properties.\nOption D: Family trust owns the SPV. Chain: Family office (non-UK) (settlor) -> Discretionary trust -> PropCo Ltd -> properties."
+  },
+  "response": {
+    "A": "Direct ownership is the simplest route for an overseas family office, with no company or trust to run. The trade-off is that each residential property is bought and sold separately, non-resident surcharges may apply, and the properties stay exposed to UK inheritance tax in the family's hands.",
+    "B": "One UK SPV holds all the residential properties as a single package, keeps rental profits inside a company and could make a later sale through a share transfer simpler. The trade-off is that a company owning dwellings can face extra residential charges, and UK rules still look through the shares to the property for tax on gains and inheritance tax.",
+    "C": "A Jersey unit trust over the SPV is a familiar wrapper for overseas investors, can be tax-transparent for income and makes it easier to bring in co-investors later. The trade-off is offshore set-up and running costs, plus conditions that need to be met and kept up for the intended treatment.",
+    "D": "A discretionary trust over the SPV suits an overseas family focused on passing wealth down the generations with flexible control over who benefits. The trade-off is that UK residential property stays within the scope of trust inheritance tax charges, plus extra trust administration and reporting."
+  }
+}

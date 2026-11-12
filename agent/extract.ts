@@ -132,6 +132,17 @@ function textSupported(value: string, excerpt: string): boolean {
 
 type CitedValue = { value: string | number; page: number; excerpt: string };
 
+/** Whitespace-normalised page text around a verbatim (case-insensitive) occurrence of value, max 200 chars; null if absent. */
+export function excerptAround(pageText: string, value: string): string | null {
+  const text = norm(pageText);
+  const v = norm(value);
+  if (v.length < 3 || v.length > 200) return null;
+  const i = text.toLowerCase().indexOf(v.toLowerCase());
+  if (i < 0) return null;
+  const pad = Math.max(0, Math.floor((200 - v.length) / 2));
+  return text.slice(Math.max(0, i - pad), Math.min(text.length, i + v.length + pad)).trim();
+}
+
 /**
  * Keep a cited value only if (1) its page exists, (2) its excerpt appears verbatim in that page's
  * text (whitespace-normalised), and (3) the value itself is present in the excerpt.
@@ -148,6 +159,12 @@ export function verifyCited(field: string, c: CitedValue | null | undefined, pag
     return null;
   }
   const ok = typeof c.value === "number" ? numberSupported(c.value, c.excerpt) : textSupported(c.value, c.excerpt);
+  if (!ok && typeof c.value === "string") {
+    // Grok's excerpt often stops at a PDF line break mid-value (e.g. an address split over two lines).
+    // If the value itself is verbatim on the cited page, keep it and widen the excerpt to cover it.
+    const widened = excerptAround(page.text, c.value);
+    if (widened) return { ...c, excerpt: widened };
+  }
   if (!ok) {
     warnings.push(`Dropped ${field}: value ${JSON.stringify(c.value)} not present in excerpt "${c.excerpt}" (page ${c.page})`);
     return null;

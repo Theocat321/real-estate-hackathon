@@ -1,0 +1,46 @@
+{
+  "key": "572a0d58d9ab15155bcf392af42ceda7a67242d5",
+  "task": "brochure-extract",
+  "model": "grok-4",
+  "created_at": "2026-11-12T20:41:55.174Z",
+  "request": {
+    "system": "You extract facts from a UK commercial/residential property sale brochure (e.g. an Acuitus or Allsop lot).\nFor each field return {\"value\": ..., \"page\": <page number>, \"excerpt\": \"<short text copied EXACTLY, character for character, from that page>\"} or null if the brochure does not state it.\nThe excerpt must be a verbatim substring of the page text (10-120 characters) that contains the value. Never infer, convert or calculate a value that is not printed.\nFields: address (string, without postcode), postcode (string), property_type (string, e.g. \"Retail\", \"Office\", \"Residential flats\"), price_gbp (number, guide or asking price in pounds), price_kind (\"guide\" | \"asking\" | null, not cited),\nrent_pa_gbp (number, current gross rent per annum in pounds), yield_pct (number, e.g. 7.25), size_sqft (number, total floor area in square feet), tenure (string, e.g. \"Freehold\"), dwellings (integer, number of residential units, only if stated).\nReturn JSON with exactly these keys.",
+    "user": "=== PAGE 1 ===\nFor sale by Auction on 11th June 2026 (unless sold or withdrawn prior)\nLot 13, Beyond Retro, 23 Gloucester Road, Brighton,\nEast Sussex BN1 4AD\nPage 1 of \t9\nWell Located Retail Investment \twww.acuitus.co.uk\n\n=== PAGE 2 ===\nLot\n13\nAuction\n11th June 2026\nRent\n£98,305 per Annum Exclusive\nStatus\nAvailable\nSector\nRetail, High Street Retail\nAuction Venue\nLive Streamed Auction\nWell Located Retail Investment\nLet to BR Retail Limited (t/a Beyond Retro) until October 2034 (no\nbreaks)\nProminent triple fronted corner retail unit in the heart of the North Laine\ndistrict\nAnnual RPI-linked rent reviews\nAffluent and vibrant south coast city centre location\nApprox. commercial floor area of 267.53 sq m (2,879 sq ft)\nNearby occupiers include Wagamama, Bill's, Las Iguanas, Starbucks\nCoffee and a range of other local retailers, pubs, bars & restaurants\nMiles \t12 miles east of Worthing, 21 miles west of Eastbourne, 54\nmiles south of Central London\nRoads \tA23, A27, A270, M23 (Junction 1)\nRail \tBrighton Railway Station (55 mins to London Victoria)\nAir \tBrighton City Airport\nLocation\nSituation\nBrighton is a vibrant and affluent south coast city, renowned for its tourism,\nretailing and leisure amenities, located approximately 54 miles south of London.\nThe property occupies a prominent corner position on Gloucester Road, within\nthe heart of the popular North Laine district, one of the UK’s most established and\ndistinctive retail and leisure destinations. The property is situated within a 5 minute\nwalk of Brighton Railway station and the University of Brighton City Campus.\nNearby occupiers include Wagamama, Bill's, Las Iguanas, Starbucks Coffee and\na range of other local retailers, pubs, bars & restaurants.\nTenure\nVirtual Freehold. 999 years from 02/03/2006 at a ground rent of £250 per annum.\nEPC\nBand B\nProperty Information\nDescription\nThe property comprises a substantial triple fronted ground floor retail unit forming\npart of a larger building.\nVAT\nVAT is applicable to this lot.\nDISCLAIMER\nThese particulars are for your convenience only. They do not form part of the contract and should not be relied upon. Please refer to the Acuitus website for the full terms and conditions of sale, details of the auction and any update and changes in guide price.\nFor sale by Auction on 11th June 2026 (unless sold or withdrawn prior)\nLot 13, Beyond Retro, 23 Gloucester Road, Brighton,\nEast Sussex BN1 4AD\nPage 2 of \t9\nWell Located Retail Investment \twww.acuitus.co.uk\n\n=== PAGE 3 ===\nTenancy & Accommodation\nFloor \tUse \tFloor Areas\nApprox sq m\nFloor Areas\nApprox sq ft\nTenant \tTerm \tRent p.a.x. \tRent Review\nGround \tRetail \t267.53 \t(2,879) \tBR RETAIL LIMITED\n(t/a Beyond Retro)\n15 years from 11/10/2019 \t£98,305.55 \t11/10/2026\nand annual RPI linked increased thereafter capped and collared at 1% and 4%\nTotal Approximate Floor Area \t267.53 \t(2,879) \t£98,305.55\nN.B. The commercial floor areas stated above are those published by the Valuation Office Agency (www.voa.gov.uk).\nFor sale by Auction on 11th June 2026 (unless sold or withdrawn prior)\nLot 13, Beyond Retro, 23 Gloucester Road, Brighton,\nEast Sussex BN1 4AD\nPage 3 of \t9\nWell Located Retail Investment \twww.acuitus.co.uk\n\n=== PAGE 4 ===\nFor sale by Auction on 11th June 2026 (unless sold or withdrawn prior)\nLot 13, Beyond Retro, 23 Gloucester Road, Brighton,\nEast Sussex BN1 4AD\nPage 4 of \t9\nWell Located Retail Investment \twww.acuitus.co.uk\n\n=== PAGE 5 ===\nFor sale by Auction on 11th June 2026 (unless sold or withdrawn prior)\nLot 13, Beyond Retro, 23 Gloucester Road, Brighton,\nEast Sussex BN1 4AD\nPage 5 of \t9\nWell Located Retail Investment \twww.acuitus.co.uk\n\n=== PAGE 6 ===\nFor sale by Auction on 11th June 2026 (unless sold or withdrawn prior)\nLot 13, Beyond Retro, 23 Gloucester Road, Brighton,\nEast Sussex BN1 4AD\nPage 6 of \t9\nWell Located Retail Investment \twww.acuitus.co.uk\n\n=== PAGE 7 ===\nFor sale by Auction on 11th June 2026 (unless sold or withdrawn prior)\nLot 13, Beyond Retro, 23 Gloucester Road, Brighton,\nEast Sussex BN1 4AD\nPage 7 of \t9\nWell Located Retail Investment \twww.acuitus.co.uk\n\n=== PAGE 8 ===\nFor sale by Auction on 11th June 2026 (unless sold or withdrawn prior)\nLot 13, Beyond Retro, 23 Gloucester Road, Brighton,\nEast Sussex BN1 4AD\nPage 8 of \t9\nWell Located Retail Investment \twww.acuitus.co.uk\n\n=== PAGE 9 ===\nAcuitus\nAlexander Auterac\n+44 (0)20 7034 4859\n+44 (0)7713 135 034\nalexander.auterac@acuitus.co.uk\nArchie Martine\n+44 (0)20 7034 4858\n+44 (0)7377 803 408\narchie.martine@acuitus.co.uk\nThompson Allen LLP\n6 Marlborough Place\nBrighton\nEast Sussex\nBN1 1UB\nSeller's Solicitors\nMark Allan\n44 (0)1273 608003\nmark.allen@thompsonallen.co.uk\nContacts\nMisrepresentation Act\nAcuitus Limited, for themselves and for the vendors of this property, whose agents they are, give notice that\n(i) the particulars and any further information communicated by any means to potential purchasers of the property described in the particulars, or their advisers, in connection with the possible sale of the property are provided solely for the purpose of assisting potential\npurchasers in deciding whether they wish to proceed with further investigation of the property and do not constitute either the whole or any part of an invitation, offer or contract for sale of the property;\n(ii) all descriptions, dimensions, references to condition and necessary permissions for use and occupation and other details are given in good faith and are believed to be correct as at the date of the particulars (or the date of the relevant information if earlier). However,\npotential purchasers are not entitled to rely on them as statements or representations of fact but should satisfy themselves by searches, enquiries, surveys and inspections or otherwise with regard to the accuracy of such details. No responsibility or liability is or will be\naccepted by Acuitus Limited, the vendor(s) of the property or any of their respective subsidiaries, affiliates, directors, officers, representatives, employees, advisors, or agents for any loss or damage suffered by any party, resulting from reliance on the particulars or any\nother information communicated by any means to that party, or its advisers, in connection with the possible sale of the property.\nNo person in the employment of Acuitus Limited or the vendor(s) has authority to make or give any representation or warranty, express or implied, in relation to the property. References to Acuitus Limited include any joint agents acting with Acuitus Limited.\n2024\nFor sale by Auction on 11th June 2026 (unless sold or withdrawn prior)\nLot 13, Beyond Retro, 23 Gloucester Road, Brighton,\nEast Sussex BN1 4AD\nPage 9 of \t9\nWell Located Retail Investment \twww.acuitus.co.uk"
+  },
+  "response": {
+    "address": {
+      "value": "23 Gloucester Road, Brighton, East Sussex",
+      "page": 1,
+      "excerpt": "Lot 13, Beyond Retro, 23 Gloucester Road, Brighton,"
+    },
+    "postcode": {
+      "value": "BN1 4AD",
+      "page": 1,
+      "excerpt": "East Sussex BN1 4AD"
+    },
+    "property_type": {
+      "value": "Retail",
+      "page": 2,
+      "excerpt": "Retail, High Street Retail"
+    },
+    "price_gbp": null,
+    "price_kind": null,
+    "rent_pa_gbp": {
+      "value": 98305,
+      "page": 2,
+      "excerpt": "£98,305 per Annum Exclusive"
+    },
+    "yield_pct": null,
+    "size_sqft": {
+      "value": 2879,
+      "page": 2,
+      "excerpt": "Approx. commercial floor area of 267.53 sq m (2,879 sq ft)"
+    },
+    "tenure": {
+      "value": "Virtual Freehold",
+      "page": 2,
+      "excerpt": "Virtual Freehold. 999 years from 02/03/2006"
+    },
+    "dwellings": null
+  }
+}
