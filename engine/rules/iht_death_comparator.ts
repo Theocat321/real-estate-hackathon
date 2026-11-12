@@ -6,7 +6,7 @@ import { ihtBase, ihtBaseText } from "./iht_base";
 export const IHT_DEATH_COMPARATOR_RULE: RuleRef = {
   id: "iht_death_comparator",
   name: "IHT on death if held personally (40%) - comparator",
-  citation_url: CITE.trustsIht,
+  citation_url: CITE.ihtDeath,
   as_of: AS_OF,
 };
 

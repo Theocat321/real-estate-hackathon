@@ -6,7 +6,7 @@ import { ihtBase, ihtBaseText } from "./iht_base";
 export const IHT_TEN_YEAR_RULE: RuleRef = {
   id: "iht_ten_year",
   name: "IHT ten-year (periodic) charge on relevant property trust (max 6%)",
-  citation_url: CITE.trustsIht,
+  citation_url: CITE.trustTenYear,
   as_of: AS_OF,
 };
 

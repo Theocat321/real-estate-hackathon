@@ -3,5 +3,10 @@ export const CITE = {
   sdlt: "https://www.gov.uk/stamp-duty-land-tax",
   shares: "https://www.gov.uk/hmrc-internal-manuals/stamp-taxes-shares-manual/stsm013010",
   ated: "https://www.gov.uk/guidance/annual-tax-on-enveloped-dwellings-the-basics",
-  trustsIht: "https://www.phb.co.uk/article/how-are-trusts-taxed-in-the-uk",
+  /** Entry (20% lifetime) charge and trust IHT overview. */
+  trustsIht: "https://www.gov.uk/guidance/trusts-and-inheritance-tax",
+  /** Ten-year anniversary (principal) charge, up to 6%. */
+  trustTenYear: "https://www.gov.uk/hmrc-internal-manuals/inheritance-tax-manual/ihtm42081",
+  /** 40% death rate above the nil-rate band. */
+  ihtDeath: "https://www.gov.uk/inheritance-tax",
 } as const;
