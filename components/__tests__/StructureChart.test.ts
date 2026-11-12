@@ -17,11 +17,11 @@ describe("edgeLabel", () => {
 });
 
 describe("nodeHeight", () => {
-  it("adds 18 per two badges", () => {
+  it("adds 18 per badge, one badge per row", () => {
     expect(nodeHeight(0)).toBe(56);
     expect(nodeHeight(1)).toBe(74);
-    expect(nodeHeight(2)).toBe(74);
-    expect(nodeHeight(3)).toBe(92);
+    expect(nodeHeight(2)).toBe(92);
+    expect(nodeHeight(3)).toBe(110);
   });
 });
 

@@ -4,9 +4,9 @@ export const NODE_W = 170;
 export const NODE_H = 56;
 export const BADGE_ROW_H = 18;
 
-/** Node height for dagre: base height plus one 18px row per two badges, so badges never overlap the next rank. */
+/** Node height for dagre: base height plus one 18px row per badge (at NODE_W a label like "Income tax on rent p.a. £12,329" fills a row), so badges never overlap the next rank. */
 export function nodeHeight(badges: number): number {
-  return NODE_H + BADGE_ROW_H * Math.ceil(badges / 2);
+  return NODE_H + BADGE_ROW_H * badges;
 }
 
 /** What an edge means, from the kinds of the nodes it joins. */
