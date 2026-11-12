@@ -95,7 +95,30 @@ export function extractJsonText(raw: string): string {
   const s = (fenced ? fenced[1] : raw).trim();
   const start = s.indexOf("{");
   const end = s.lastIndexOf("}");
-  return start >= 0 && end > start ? s.slice(start, end + 1) : s;
+  return escapeControlCharsInStrings(start >= 0 && end > start ? s.slice(start, end + 1) : s);
+}
+
+/**
+ * Chat replies (Grok Bot) sometimes put a raw line break or tab inside a quoted string, e.g. an excerpt
+ * copied across a PDF line. JSON forbids that; escape control characters inside strings only.
+ */
+export function escapeControlCharsInStrings(json: string): string {
+  let out = "";
+  let inString = false;
+  let escaped = false;
+  for (const ch of json) {
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      else if (ch < " ") {
+        out += ch === "\n" ? "\\n" : ch === "\r" ? "\\r" : ch === "\t" ? "\\t" : `\\u${ch.charCodeAt(0).toString(16).padStart(4, "0")}`;
+        continue;
+      }
+    } else if (ch === '"') inString = true;
+    out += ch;
+  }
+  return out;
 }
 
 function validate<S extends z.ZodType>(schema: S, raw: string): { ok: true; data: z.output<S> } | { ok: false; error: string } {

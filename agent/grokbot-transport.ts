@@ -63,7 +63,21 @@ export function replyFrom(stdout: string, prompt: string): string {
   return texts[texts.length - 1];
 }
 
-export const grokBotTransport: Transport = async (messages) => {
+/**
+ * Grok Bot answers in one shared chat thread, so two requests in flight at once can receive each
+ * other's replies (seen in practice: a brochure extraction got the structure rationales back).
+ * Run calls one at a time. The queue lives on globalThis so every route bundle in the process shares it.
+ */
+const g = globalThis as { __grokBotQueue?: Promise<unknown> };
+export function serialised<T>(fn: () => Promise<T>): Promise<T> {
+  const run = (g.__grokBotQueue ?? Promise.resolve()).then(fn, fn);
+  g.__grokBotQueue = run.catch(() => undefined);
+  return run;
+}
+
+export const grokBotTransport: Transport = (messages) => serialised(() => askGrokBot(messages));
+
+async function askGrokBot(messages: Parameters<Transport>[0]): Promise<string> {
   const prompt = toPrompt(messages);
   const timeoutS = Number(process.env.GROKBOT_TIMEOUT_S || 120);
   const stdout = await runGrokBot(
@@ -71,4 +85,4 @@ export const grokBotTransport: Transport = async (messages) => {
     (timeoutS + 30) * 1000,
   );
   return replyFrom(stdout, prompt);
-};
+}

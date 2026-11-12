@@ -78,6 +78,10 @@ export const BrochureSchema = z.object({
   size_sqft: Cited(z.number().positive()),
   tenure: Cited(z.string().min(2)),
   dwellings: Cited(z.number().int().nonnegative()),
+}).refine((f) => f.address != null, {
+  // Every brochure names its property. A reply without an address is a wrong or empty answer
+  // (e.g. a crossed reply from another request), so fail validation and let grokJson retry.
+  message: "address is required: cite it from the brochure",
 });
 export type BrochureFields = z.infer<typeof BrochureSchema>;
 
