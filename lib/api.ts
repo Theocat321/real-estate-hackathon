@@ -20,6 +20,7 @@ import type {
   StructuresResponse,
 } from "@/contracts";
 import type { Cliff } from "@/engine/cliffs";
+import type { OptimiseResult } from "@/engine/optimise";
 
 export const FOOTER =
   "Property data: sourced · Structure: simulated · Rules: cited · Decision support, not tax advice";
@@ -88,6 +89,26 @@ export function rememberBase(toppedId: string, baseId: string): void {
 }
 export function baseOf(id: string): string | null {
   return typeof window === "undefined" ? null : sessionStorage.getItem(`ss:base:${id}`);
+}
+
+/** POST /api/optimise: which lots to buy and how to split them into purchases, for the lowest tax rate. */
+export async function optimisePacket(req: {
+  packet: Packet;
+  investors: Investor[];
+  same_seller: boolean;
+  keep_all: boolean;
+}): Promise<OptimiseResult & { candidates: Property[] }> {
+  return postJson("/api/optimise", req);
+}
+
+/** The optimised split for a packet, so the studio can show it. */
+export function savePlan(packetId: string, plan: OptimiseResult): void {
+  if (typeof window !== "undefined") sessionStorage.setItem(`ss:plan:${packetId}`, JSON.stringify(plan));
+}
+export function loadPlan(packetId: string): OptimiseResult | null {
+  if (typeof window === "undefined") return null;
+  const raw = sessionStorage.getItem(`ss:plan:${packetId}`);
+  return raw ? (JSON.parse(raw) as OptimiseResult) : null;
 }
 
 /** POST /api/structures */

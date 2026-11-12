@@ -7,6 +7,7 @@ import type { EngineResult, Investor, OptionId, Packet, Structure } from "@/cont
 import { Notice } from "@/components/ui";
 import { CliffPanel } from "@/components/CliffPanel";
 import type { Cliff } from "@/engine/cliffs";
+import type { OptimiseResult } from "@/engine/optimise";
 import { CostMoney } from "@/components/SourceDrawer";
 import { StructureChart } from "@/components/StructureChart";
 import { FlagList, OptionDTimeline, STAGE_LABEL, TotalsChart, TotalsTable } from "@/components/StudioPanels";
@@ -18,6 +19,7 @@ import {
   exportPdf,
   gbp,
   loadPacket,
+  loadPlan,
   runScenario,
   type InvestorPreset,
 } from "@/lib/api";
@@ -37,8 +39,14 @@ export default function StudioPage() {
   const [changeNote, setChangeNote] = useState<string | null>(null);
   const prev = useRef<{ preset: InvestorPreset; structures: Structure[]; result: EngineResult } | null>(null);
 
+  const [plan, setPlan] = useState<OptimiseResult | null>(null);
   useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("investor");
+    if (q && q in INVESTOR_PRESETS) setPreset(q as InvestorPreset);
     const p = loadPacket(decodeURIComponent(id));
+    const pl = loadPlan(decodeURIComponent(id));
+    setPlan(pl);
+    if (pl) setTab(pl.best.groups[0].option);
     if (p) setPacket(p);
     else setError("Packet not found in this session.");
   }, [id]);
@@ -265,6 +273,25 @@ export default function StudioPage() {
             </button>
           </div>
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
+            {plan && (
+              <section className="rounded-md border-l-[3px] border-edge bg-edge-soft/50 px-3 py-2.5">
+                <h3 className="text-[13px] font-semibold">Your optimised plan</h3>
+                <p className="mt-0.5 text-[12px] text-ink-soft">
+                  {plan.best.groups.length === 1
+                    ? `All ${plan.best.item_ids.length} lots through option ${plan.best.groups[0].option}.`
+                    : `${plan.best.groups.length} separate purchases: ${plan.best.groups.map((g) => `${g.item_ids.length} lot${g.item_ids.length > 1 ? "s" : ""} via ${g.option}`).join(", ")}.`}{" "}
+                  {gbp(plan.best.cost)} in tax over {plan.horizon_years} years
+                  {plan.single.cost > plan.best.cost ? `, ${gbp(plan.single.cost - plan.best.cost)} less than one structure` : ""}.
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {plan.best.groups.map((g, i) => (
+                    <button key={i} onClick={() => setTab(g.option)} className="rounded-full border border-ink px-2 py-0.5 text-[11px] font-semibold hover:bg-ink hover:text-sheet">
+                      See {g.option}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
             <section>
               <h3 className="text-[13px] font-semibold">What each option costs, and when</h3>
               <div className="mt-2 h-44">{result && <TotalsChart result={result} />}</div>

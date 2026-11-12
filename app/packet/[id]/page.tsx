@@ -6,7 +6,9 @@ import { useEffect, useState } from "react";
 import type { Packet, Property, Sourced } from "@/contracts";
 import { PartsMoney, SourcedMoney } from "@/components/SourceDrawer";
 import { Figure, Notice, UseTag } from "@/components/ui";
-import { baseOf, gbp, loadPacket, rememberBase, savePacket, topUpToSixHomes } from "@/lib/api";
+import { baseOf, gbp, loadPacket, packetFromUpload, rememberBase, savePacket, savePlan, type InvestorPreset } from "@/lib/api";
+import { OptimisePanel } from "@/components/OptimisePanel";
+import type { OptimiseResult } from "@/engine/optimise";
 
 export default function PacketPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,27 +37,20 @@ export default function PacketPage() {
   if (!packet) return <p className="text-muted">Loading packet…</p>;
 
   const seed = packet.items.find((p) => p.id === packet.seed_id) ?? packet.items[0];
-  // Homes that count towards the six-dwelling SDLT rule (residential, England or Northern Ireland).
-  const homes = packet.items
-    .filter((p) => p.use === "residential" && (p.nation === "england" || p.nation === "ni"))
-    .reduce((n, p) => n + Math.max(1, p.dwellings), 0);
   const base = baseOf(packet.id);
 
-  async function addHomes() {
+  function applyPlan(items: Property[], plan: OptimiseResult, preset: InvestorPreset) {
     if (!packet) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const next = await topUpToSixHomes(packet);
-      rememberBase(next.id, packet.id);
-      savePacket(next);
-      setPacket(next);
-      router.replace(`/packet/${encodeURIComponent(next.id)}`);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
+    const groups = plan.best.groups.length;
+    const next: Packet = {
+      ...packetFromUpload(items, "plan"),
+      seed_id: items.some((p) => p.id === packet.seed_id) ? packet.seed_id : items[0].id,
+      match_reason: `Optimised: ${items.length} lots in ${groups} purchase${groups > 1 ? "s" : ""}, ${plan.best.rate_pct.toFixed(1)}% of price in tax over ${plan.horizon_years} years.`,
+    };
+    if (next.id !== packet.id) rememberBase(next.id, packet.id);
+    savePacket(next);
+    savePlan(next.id, plan);
+    router.push(`/studio/${encodeURIComponent(next.id)}?investor=${preset}`);
   }
 
   function removeAdded() {
@@ -191,35 +186,14 @@ export default function PacketPage() {
           </dl>
         </section>
 
-        {homes > 0 && (
-          <section className={`rounded-md border bg-sheet p-4 text-[14px] ${homes >= 6 ? "border-ink" : "border-rule"}`}>
-            <p className="font-semibold">
-              {homes} {homes === 1 ? "home" : "homes"}
-              {homes >= 6 ? ": six or more" : `: ${6 - homes} short of six`}
-            </p>
-            <p className="mt-0.5 text-[13px] leading-snug text-muted">
-              {homes >= 6
-                ? "Bought together in one transaction, six or more homes pay stamp duty at non-residential rates."
-                : "Six or more homes bought in one transaction pay stamp duty at non-residential rates, often less."}
-            </p>
-            {homes < 6 && (
-              <button
-                onClick={addHomes}
-                disabled={busy}
-                className="mt-3 rounded-md border border-ink px-3 py-1.5 text-[13px] font-semibold transition-colors hover:bg-ink hover:text-sheet disabled:opacity-50"
-              >
-                {busy ? "Finding homes…" : `Add ${6 - homes} ${6 - homes === 1 ? "home" : "homes"} from the data`}
-              </button>
-            )}
-            {homes >= 6 && base && (
-              <button onClick={removeAdded} className="mt-3 text-[13px] font-medium text-muted underline decoration-rule underline-offset-2 hover:text-ink">
-                Remove the added homes
-              </button>
-            )}
-          </section>
-        )}
+        <OptimisePanel packet={packet} onApply={applyPlan} />
         {error && <Notice tone="error">{error}</Notice>}
 
+        {base && (
+          <button onClick={removeAdded} className="text-[13px] font-medium text-muted underline decoration-rule underline-offset-2 hover:text-ink">
+            Back to the original packet
+          </button>
+        )}
         <Link
           href={`/studio/${encodeURIComponent(packet.id)}`}
           className="block rounded-md bg-ink px-4 py-3.5 text-center text-[15px] font-semibold text-sheet transition-colors hover:bg-ink-soft"
