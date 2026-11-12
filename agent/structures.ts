@@ -189,17 +189,36 @@ export function rationalePrompt(packet: Packet, investors: Investor[], structure
   ].join("\n");
 }
 
-export async function buildStructures(packet: Packet, investors: Investor[], transport?: Transport): Promise<{ structures: Structure[]; warnings: string[] }> {
+/**
+ * How long the Studio waits for Grok's rationale before showing template text. A slow call keeps
+ * running in the background and fills the cache, so the next load gets Grok's wording.
+ */
+export const RATIONALE_WAIT_MS = 8_000;
+
+export async function buildStructures(
+  packet: Packet,
+  investors: Investor[],
+  transport?: Transport,
+  waitMs = RATIONALE_WAIT_MS,
+): Promise<{ structures: Structure[]; warnings: string[] }> {
   const structures = buildStructureTemplates(packet, investors);
   const warnings: string[] = [];
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const r = await grokJson(
+    const call = grokJson(
       { task: "structure-rationale", system: RATIONALE_SYSTEM, user: rationalePrompt(packet, investors, structures), schema: RationaleSchema },
       transport,
     );
+    call.catch(() => {}); // a late failure after the time limit is not an unhandled rejection
+    const late = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`no reply within ${waitMs / 1000}s`)), waitMs);
+    });
+    const r = await Promise.race([call, late]);
     for (const s of structures) s.rationale = r[s.option].trim();
   } catch (e) {
     warnings.push(`Grok rationale unavailable, using template text (${(e as Error).message})`);
+  } finally {
+    clearTimeout(timer);
   }
   return { structures: OPTIONS.map((o) => structures.find((s) => s.option === o)!), warnings };
 }

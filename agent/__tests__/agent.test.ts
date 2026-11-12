@@ -103,6 +103,15 @@ describe("structures (templates, not LLM)", () => {
     expect(r2.structures[0].rationale).toBe(FALLBACK_RATIONALE.A);
     expect(r2.warnings[0]).toMatch(/template text/);
   });
+
+  it("does not wait on a slow Grok: template text after the time limit", async () => {
+    const slow: Transport = () => new Promise(() => {});
+    const started = Date.now();
+    const r = await buildStructures(samplePacket(), [UK_PENSION], slow, 50);
+    expect(Date.now() - started).toBeLessThan(1000);
+    expect(r.structures.map((s) => s.rationale)).toEqual(["A", "B", "C", "D"].map((o) => FALLBACK_RATIONALE[o as "A"]));
+    expect(r.warnings[0]).toMatch(/template text/);
+  });
 });
 
 describe("grok client", () => {
