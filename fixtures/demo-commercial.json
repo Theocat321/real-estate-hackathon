@@ -1,0 +1,462 @@
+{
+  "id": "pk-allsop-6392cf9c-5",
+  "seed": {
+    "id": "allsop-6392cf9c",
+    "name": "Wireless House, Westfield Industrial Estate, Midsomer Norton, Avon, BA3 4BS",
+    "address": {
+      "value": "Wireless House, Westfield Industrial Estate, Midsomer Norton, Avon, BA3 4BS",
+      "source": {
+        "kind": "auction",
+        "file": "auction-results.csv",
+        "row": 2,
+        "record_id": "allsop-6392cf9c",
+        "url": "https://www.allsop.co.uk/api/lot/7daca700-1193-11f1-a689-0242ac110002",
+        "label": "Address (allsop lot C260507 006, row 2)",
+        "excerpt": "address=Wireless House, Westfield Industrial Estate, Midsomer Norton, Avon, BA3 4BS"
+      }
+    },
+    "postcode": {
+      "value": "BA3 4BS",
+      "source": {
+        "kind": "auction",
+        "file": "auction-results.csv",
+        "row": 2,
+        "record_id": "allsop-6392cf9c",
+        "url": "https://www.allsop.co.uk/api/lot/7daca700-1193-11f1-a689-0242ac110002",
+        "label": "Postcode (allsop lot C260507 006, row 2)",
+        "excerpt": "postcode=BA3 4BS"
+      }
+    },
+    "postcode_area": "BA",
+    "nation": "england",
+    "use": "commercial",
+    "property_type": "commercial",
+    "dwellings": 0,
+    "price_gbp": {
+      "value": 890000,
+      "source": {
+        "kind": "auction",
+        "file": "auction-results.csv",
+        "row": 2,
+        "record_id": "allsop-6392cf9c",
+        "url": "https://www.allsop.co.uk/api/lot/7daca700-1193-11f1-a689-0242ac110002",
+        "label": "Achieved price (allsop lot C260507 006, row 2)",
+        "excerpt": "achieved_price_gbp=890000.0; auction_date=2026-05-06; result_status=sold"
+      }
+    },
+    "price_kind": "achieved",
+    "rent_pa_gbp": null,
+    "yield_pct": null,
+    "size_sqft": null,
+    "tenure": null,
+    "url": "https://www.allsop.co.uk/api/lot/7daca700-1193-11f1-a689-0242ac110002",
+    "source": {
+      "kind": "auction",
+      "file": "auction-results.csv",
+      "row": 2,
+      "record_id": "allsop-6392cf9c",
+      "url": "https://www.allsop.co.uk/api/lot/7daca700-1193-11f1-a689-0242ac110002",
+      "label": "Auction lot C260507 006 (allsop lot C260507 006, row 2)",
+      "excerpt": "address=Wireless House, Westfield Industrial Estate, Midsomer Norton, Avon, BA3 4BS; postcode=BA3 4BS; lot_type=commercial"
+    }
+  },
+  "items": [
+    {
+      "property": {
+        "id": "allsop-6392cf9c",
+        "name": "Wireless House, Westfield Industrial Estate, Midsomer Norton, Avon, BA3 4BS",
+        "address": {
+          "value": "Wireless House, Westfield Industrial Estate, Midsomer Norton, Avon, BA3 4BS",
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 2,
+            "record_id": "allsop-6392cf9c",
+            "url": "https://www.allsop.co.uk/api/lot/7daca700-1193-11f1-a689-0242ac110002",
+            "label": "Address (allsop lot C260507 006, row 2)",
+            "excerpt": "address=Wireless House, Westfield Industrial Estate, Midsomer Norton, Avon, BA3 4BS"
+          }
+        },
+        "postcode": {
+          "value": "BA3 4BS",
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 2,
+            "record_id": "allsop-6392cf9c",
+            "url": "https://www.allsop.co.uk/api/lot/7daca700-1193-11f1-a689-0242ac110002",
+            "label": "Postcode (allsop lot C260507 006, row 2)",
+            "excerpt": "postcode=BA3 4BS"
+          }
+        },
+        "postcode_area": "BA",
+        "nation": "england",
+        "use": "commercial",
+        "property_type": "commercial",
+        "dwellings": 0,
+        "price_gbp": {
+          "value": 890000,
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 2,
+            "record_id": "allsop-6392cf9c",
+            "url": "https://www.allsop.co.uk/api/lot/7daca700-1193-11f1-a689-0242ac110002",
+            "label": "Achieved price (allsop lot C260507 006, row 2)",
+            "excerpt": "achieved_price_gbp=890000.0; auction_date=2026-05-06; result_status=sold"
+          }
+        },
+        "price_kind": "achieved",
+        "rent_pa_gbp": null,
+        "yield_pct": null,
+        "size_sqft": null,
+        "tenure": null,
+        "url": "https://www.allsop.co.uk/api/lot/7daca700-1193-11f1-a689-0242ac110002",
+        "source": {
+          "kind": "auction",
+          "file": "auction-results.csv",
+          "row": 2,
+          "record_id": "allsop-6392cf9c",
+          "url": "https://www.allsop.co.uk/api/lot/7daca700-1193-11f1-a689-0242ac110002",
+          "label": "Auction lot C260507 006 (allsop lot C260507 006, row 2)",
+          "excerpt": "address=Wireless House, Westfield Industrial Estate, Midsomer Norton, Avon, BA3 4BS; postcode=BA3 4BS; lot_type=commercial"
+        }
+      },
+      "score": 0,
+      "match_reason": "Seed property chosen by the user."
+    },
+    {
+      "property": {
+        "id": "allsop-b63a2bdb",
+        "name": "59-61 Highgate High Street, Highgate, London, N6 5JY",
+        "address": {
+          "value": "59-61 Highgate High Street, Highgate, London, N6 5JY",
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 52,
+            "record_id": "allsop-b63a2bdb",
+            "url": "https://www.allsop.co.uk/api/lot/cf68f104-a5e3-11f1-8444-0242ac110002",
+            "label": "Address (allsop lot C261001 153, row 52)",
+            "excerpt": "address=59-61 Highgate High Street, Highgate, London, N6 5JY"
+          }
+        },
+        "postcode": {
+          "value": "N6 5JY",
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 52,
+            "record_id": "allsop-b63a2bdb",
+            "url": "https://www.allsop.co.uk/api/lot/cf68f104-a5e3-11f1-8444-0242ac110002",
+            "label": "Postcode (allsop lot C261001 153, row 52)",
+            "excerpt": "postcode=N6 5JY"
+          }
+        },
+        "postcode_area": "N",
+        "nation": "england",
+        "use": "commercial",
+        "property_type": "commercial",
+        "dwellings": 0,
+        "price_gbp": {
+          "value": 892500,
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 52,
+            "record_id": "allsop-b63a2bdb",
+            "url": "https://www.allsop.co.uk/api/lot/cf68f104-a5e3-11f1-8444-0242ac110002",
+            "label": "Achieved price (allsop lot C261001 153, row 52)",
+            "excerpt": "achieved_price_gbp=892500.0; auction_date=2026-10-06; result_status=sold"
+          }
+        },
+        "price_kind": "achieved",
+        "rent_pa_gbp": null,
+        "yield_pct": null,
+        "size_sqft": null,
+        "tenure": null,
+        "url": "https://www.allsop.co.uk/api/lot/cf68f104-a5e3-11f1-8444-0242ac110002",
+        "source": {
+          "kind": "auction",
+          "file": "auction-results.csv",
+          "row": 52,
+          "record_id": "allsop-b63a2bdb",
+          "url": "https://www.allsop.co.uk/api/lot/cf68f104-a5e3-11f1-8444-0242ac110002",
+          "label": "Auction lot C261001 153 (allsop lot C261001 153, row 52)",
+          "excerpt": "address=59-61 Highgate High Street, Highgate, London, N6 5JY; postcode=N6 5JY; lot_type=commercial"
+        }
+      },
+      "score": 3,
+      "match_reason": "Matched on same use (commercial) and nation (england), same type (commercial), achieved £892,500 within ±40% of seed."
+    },
+    {
+      "property": {
+        "id": "allsop-a0c68665",
+        "name": "Haymarket Towers, 33 Humberstone Gate, Leicester, Leicestershire, LE1 1WA",
+        "address": {
+          "value": "Haymarket Towers, 33 Humberstone Gate, Leicester, Leicestershire, LE1 1WA",
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 479,
+            "record_id": "allsop-a0c68665",
+            "url": "https://www.allsop.co.uk/api/lot/5a8fd6bc-ad0a-11f1-a8e8-0242ac110002",
+            "label": "Address (allsop lot C261001 201, row 479)",
+            "excerpt": "address=Haymarket Towers, 33 Humberstone Gate, Leicester, Leicestershire, LE1 1WA"
+          }
+        },
+        "postcode": {
+          "value": "LE1 1WA",
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 479,
+            "record_id": "allsop-a0c68665",
+            "url": "https://www.allsop.co.uk/api/lot/5a8fd6bc-ad0a-11f1-a8e8-0242ac110002",
+            "label": "Postcode (allsop lot C261001 201, row 479)",
+            "excerpt": "postcode=LE1 1WA"
+          }
+        },
+        "postcode_area": "LE",
+        "nation": "england",
+        "use": "commercial",
+        "property_type": "commercial",
+        "dwellings": 0,
+        "price_gbp": {
+          "value": 885000,
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 479,
+            "record_id": "allsop-a0c68665",
+            "url": "https://www.allsop.co.uk/api/lot/5a8fd6bc-ad0a-11f1-a8e8-0242ac110002",
+            "label": "Achieved price (allsop lot C261001 201, row 479)",
+            "excerpt": "achieved_price_gbp=885000.0; auction_date=2026-10-06; result_status=sold"
+          }
+        },
+        "price_kind": "achieved",
+        "rent_pa_gbp": null,
+        "yield_pct": null,
+        "size_sqft": null,
+        "tenure": null,
+        "url": "https://www.allsop.co.uk/api/lot/5a8fd6bc-ad0a-11f1-a8e8-0242ac110002",
+        "source": {
+          "kind": "auction",
+          "file": "auction-results.csv",
+          "row": 479,
+          "record_id": "allsop-a0c68665",
+          "url": "https://www.allsop.co.uk/api/lot/5a8fd6bc-ad0a-11f1-a8e8-0242ac110002",
+          "label": "Auction lot C261001 201 (allsop lot C261001 201, row 479)",
+          "excerpt": "address=Haymarket Towers, 33 Humberstone Gate, Leicester, Leicestershire, LE1 1WA; postcode=LE1 1WA; lot_type=commercial"
+        }
+      },
+      "score": 3,
+      "match_reason": "Matched on same use (commercial) and nation (england), same type (commercial), achieved £885,000 within ±40% of seed."
+    },
+    {
+      "property": {
+        "id": "allsop-b7b601ec",
+        "name": "1 Northbrook Street, Newbury, Berkshire, RG14 1DJ",
+        "address": {
+          "value": "1 Northbrook Street, Newbury, Berkshire, RG14 1DJ",
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 834,
+            "record_id": "allsop-b7b601ec",
+            "url": "https://www.allsop.co.uk/api/lot/87111922-0b38-11f1-93a3-0242ac110002",
+            "label": "Address (allsop lot C260324 053, row 834)",
+            "excerpt": "address=1 Northbrook Street, Newbury, Berkshire, RG14 1DJ"
+          }
+        },
+        "postcode": {
+          "value": "RG14 1DJ",
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 834,
+            "record_id": "allsop-b7b601ec",
+            "url": "https://www.allsop.co.uk/api/lot/87111922-0b38-11f1-93a3-0242ac110002",
+            "label": "Postcode (allsop lot C260324 053, row 834)",
+            "excerpt": "postcode=RG14 1DJ"
+          }
+        },
+        "postcode_area": "RG",
+        "nation": "england",
+        "use": "commercial",
+        "property_type": "commercial",
+        "dwellings": 0,
+        "price_gbp": {
+          "value": 900000,
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 834,
+            "record_id": "allsop-b7b601ec",
+            "url": "https://www.allsop.co.uk/api/lot/87111922-0b38-11f1-93a3-0242ac110002",
+            "label": "Achieved price (allsop lot C260324 053, row 834)",
+            "excerpt": "achieved_price_gbp=900000.0; auction_date=2026-03-24; result_status=sold prior"
+          }
+        },
+        "price_kind": "achieved",
+        "rent_pa_gbp": null,
+        "yield_pct": null,
+        "size_sqft": null,
+        "tenure": null,
+        "url": "https://www.allsop.co.uk/api/lot/87111922-0b38-11f1-93a3-0242ac110002",
+        "source": {
+          "kind": "auction",
+          "file": "auction-results.csv",
+          "row": 834,
+          "record_id": "allsop-b7b601ec",
+          "url": "https://www.allsop.co.uk/api/lot/87111922-0b38-11f1-93a3-0242ac110002",
+          "label": "Auction lot C260324 053 (allsop lot C260324 053, row 834)",
+          "excerpt": "address=1 Northbrook Street, Newbury, Berkshire, RG14 1DJ; postcode=RG14 1DJ; lot_type=commercial"
+        }
+      },
+      "score": 3,
+      "match_reason": "Matched on same use (commercial) and nation (england), same type (commercial), achieved £900,000 within ±40% of seed."
+    },
+    {
+      "property": {
+        "id": "allsop-c88c66b6",
+        "name": "8 Cornhill &  27 Durngate Street, Dorchester, Dorset, DT1 1BA",
+        "address": {
+          "value": "8 Cornhill &  27 Durngate Street, Dorchester, Dorset, DT1 1BA",
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 252,
+            "record_id": "allsop-c88c66b6",
+            "url": "https://www.allsop.co.uk/api/lot/b092b91a-f15f-11f0-a2ce-0242ac110002",
+            "label": "Address (allsop lot C260211 091, row 252)",
+            "excerpt": "address=8 Cornhill &  27 Durngate Street, Dorchester, Dorset, DT1 1BA"
+          }
+        },
+        "postcode": {
+          "value": "DT1 1BA",
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 252,
+            "record_id": "allsop-c88c66b6",
+            "url": "https://www.allsop.co.uk/api/lot/b092b91a-f15f-11f0-a2ce-0242ac110002",
+            "label": "Postcode (allsop lot C260211 091, row 252)",
+            "excerpt": "postcode=DT1 1BA"
+          }
+        },
+        "postcode_area": "DT",
+        "nation": "england",
+        "use": "commercial",
+        "property_type": "commercial",
+        "dwellings": 0,
+        "price_gbp": {
+          "value": 900000,
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 252,
+            "record_id": "allsop-c88c66b6",
+            "url": "https://www.allsop.co.uk/api/lot/b092b91a-f15f-11f0-a2ce-0242ac110002",
+            "label": "Achieved price (allsop lot C260211 091, row 252)",
+            "excerpt": "achieved_price_gbp=900000.0; auction_date=2026-02-11; result_status=sold prior"
+          }
+        },
+        "price_kind": "achieved",
+        "rent_pa_gbp": null,
+        "yield_pct": null,
+        "size_sqft": null,
+        "tenure": null,
+        "url": "https://www.allsop.co.uk/api/lot/b092b91a-f15f-11f0-a2ce-0242ac110002",
+        "source": {
+          "kind": "auction",
+          "file": "auction-results.csv",
+          "row": 252,
+          "record_id": "allsop-c88c66b6",
+          "url": "https://www.allsop.co.uk/api/lot/b092b91a-f15f-11f0-a2ce-0242ac110002",
+          "label": "Auction lot C260211 091 (allsop lot C260211 091, row 252)",
+          "excerpt": "address=8 Cornhill &  27 Durngate Street, Dorchester, Dorset, DT1 1BA; postcode=DT1 1BA; lot_type=commercial"
+        }
+      },
+      "score": 3,
+      "match_reason": "Matched on same use (commercial) and nation (england), same type (commercial), achieved £900,000 within ±40% of seed."
+    },
+    {
+      "property": {
+        "id": "allsop-f212ec95",
+        "name": "41/42 Burgate, Canterbury, Kent, CT1 2HW",
+        "address": {
+          "value": "41/42 Burgate, Canterbury, Kent, CT1 2HW",
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 839,
+            "record_id": "allsop-f212ec95",
+            "url": "https://www.allsop.co.uk/api/lot/06c0f8b6-94b1-11f1-a15a-0242ac110002",
+            "label": "Address (allsop lot C261001 097, row 839)",
+            "excerpt": "address=41/42 Burgate, Canterbury, Kent, CT1 2HW"
+          }
+        },
+        "postcode": {
+          "value": "CT1 2HW",
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 839,
+            "record_id": "allsop-f212ec95",
+            "url": "https://www.allsop.co.uk/api/lot/06c0f8b6-94b1-11f1-a15a-0242ac110002",
+            "label": "Postcode (allsop lot C261001 097, row 839)",
+            "excerpt": "postcode=CT1 2HW"
+          }
+        },
+        "postcode_area": "CT",
+        "nation": "england",
+        "use": "commercial",
+        "property_type": "commercial",
+        "dwellings": 0,
+        "price_gbp": {
+          "value": 900000,
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "row": 839,
+            "record_id": "allsop-f212ec95",
+            "url": "https://www.allsop.co.uk/api/lot/06c0f8b6-94b1-11f1-a15a-0242ac110002",
+            "label": "Achieved price (allsop lot C261001 097, row 839)",
+            "excerpt": "achieved_price_gbp=900000.0; auction_date=2026-10-06; result_status=sold"
+          }
+        },
+        "price_kind": "achieved",
+        "rent_pa_gbp": null,
+        "yield_pct": null,
+        "size_sqft": null,
+        "tenure": null,
+        "url": "https://www.allsop.co.uk/api/lot/06c0f8b6-94b1-11f1-a15a-0242ac110002",
+        "source": {
+          "kind": "auction",
+          "file": "auction-results.csv",
+          "row": 839,
+          "record_id": "allsop-f212ec95",
+          "url": "https://www.allsop.co.uk/api/lot/06c0f8b6-94b1-11f1-a15a-0242ac110002",
+          "label": "Auction lot C261001 097 (allsop lot C261001 097, row 839)",
+          "excerpt": "address=41/42 Burgate, Canterbury, Kent, CT1 2HW; postcode=CT1 2HW; lot_type=commercial"
+        }
+      },
+      "score": 3,
+      "match_reason": "Matched on same use (commercial) and nation (england), same type (commercial), achieved £900,000 within ±40% of seed."
+    }
+  ],
+  "totals": {
+    "price_gbp": 5367500,
+    "rent_pa_gbp": null,
+    "blended_yield_pct": null,
+    "dwellings": 0
+  },
+  "criteria": {
+    "use": "commercial",
+    "nation": "england",
+    "price_band_pct": 40,
+    "n": 5,
+    "min_dwellings": null
+  }
+}
