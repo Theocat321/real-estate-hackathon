@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Property } from "@/contracts";
 import { SourcedMoney } from "@/components/SourceDrawer";
 import { Notice, UseTag } from "@/components/ui";
-import { SAMPLE, USE_FIXTURES, extract, gbp, match, savePacket, searchProperties } from "@/lib/api";
+import { RESIDENTIAL_SAMPLE, SAMPLE, USE_FIXTURES, extract, gbp, match, savePacket, searchProperties } from "@/lib/api";
 
 export default function StartPage() {
   const router = useRouter();
@@ -43,9 +43,8 @@ export default function StartPage() {
     }
   }
 
-  function trySample() {
-    savePacket(SAMPLE.packet);
-    router.push(`/packet/${encodeURIComponent(SAMPLE.packet.id)}`);
+  function trySample(id: string = SAMPLE.packet.id) {
+    router.push(`/packet/${encodeURIComponent(id)}`);
   }
 
   return (
@@ -122,7 +121,7 @@ export default function StartPage() {
       </div>
 
       <aside className="lg:pt-2">
-        <SampleDiagram onOpen={trySample} />
+        <SampleDiagram onOpen={() => trySample()} onOpenResidential={() => trySample(RESIDENTIAL_SAMPLE.id)} />
         {USE_FIXTURES && (
           <p className="mt-3 text-[12px] text-faint">Running on saved fixtures. Set NEXT_PUBLIC_USE_FIXTURES=false to use live data.</p>
         )}
@@ -142,7 +141,7 @@ function UploadGlyph() {
 }
 
 /** The sample packet's family-trust structure, drawn as the hero. */
-function SampleDiagram({ onOpen }: { onOpen: () => void }) {
+function SampleDiagram({ onOpen, onOpenResidential }: { onOpen: () => void; onOpenResidential: () => void }) {
   const d = SAMPLE.structures.find((s) => s.option === "D");
   const nodes = d?.nodes ?? [];
   const tiers = [
@@ -187,12 +186,20 @@ function SampleDiagram({ onOpen }: { onOpen: () => void }) {
         <p className="mt-1 text-[14px] leading-relaxed text-muted">
           One of four structures Studio compares for this packet. Each £ figure opens the rule and source row behind it.
         </p>
-        <button
-          onClick={onOpen}
-          className="mt-4 rounded-md bg-ink px-4 py-2.5 text-[14px] font-semibold text-sheet transition-colors hover:bg-ink-soft"
-        >
-          Open the sample packet
-        </button>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <button
+            onClick={onOpen}
+            className="rounded-md bg-ink px-4 py-2.5 text-[14px] font-semibold text-sheet transition-colors hover:bg-ink-soft"
+          >
+            Open the sample packet
+          </button>
+          <button
+            onClick={onOpenResidential}
+            className="rounded-md border border-ink px-4 py-2.5 text-[14px] font-semibold transition-colors hover:bg-ink hover:text-sheet"
+          >
+            Try five residential lots
+          </button>
+        </div>
       </figcaption>
     </figure>
   );

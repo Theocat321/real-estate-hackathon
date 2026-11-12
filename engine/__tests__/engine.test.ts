@@ -181,3 +181,39 @@ describe("POST /api/engine", () => {
     expect((await res.json()).error).toBeTruthy();
   });
 });
+
+describe("non-UK resident SDLT surcharge", () => {
+  const home = resProperty("h1", 400_000);
+  const nonUkOwner = { id: "buyer", kind: "investor" as const, label: "Family office (non-UK)", investor_type: "family_office_nonuk" as const, jurisdiction: "Other" as const };
+
+  function withOwner(option: OptionId, owner: typeof nonUkOwner | null): ScenarioInput {
+    const sc = scenarioWith([home], [option]);
+    if (!owner) return sc;
+    const s = sc.structures[0];
+    if (option === "A") s.nodes = s.nodes.map((n) => (n.id === "buyer" ? owner : n));
+    else {
+      s.nodes = [owner, ...s.nodes];
+      s.edges = [{ from: owner.id, to: "spv", pct: 100 }, ...s.edges];
+    }
+    return sc;
+  }
+  const sdltOf = (sc: ScenarioInput) => runEngine(sc).rows.find((r) => r.stage === "acquire" && r.tax.startsWith("SDLT"))!;
+
+  it("adds 2 points to every band for a non-UK direct buyer", () => {
+    // Higher rates on £400k = 5%·125k + 7%·125k + 10%·150k = 30,000; +2% on 400k = 8,000
+    expect(sdltOf(withOwner("A", nonUkOwner)).amount_gbp).toBe(sdltRes(400_000, 1, false).amount + 8_000);
+    expect(sdltOf(withOwner("A", nonUkOwner)).rule.citation_url).toContain("non-uk-residents");
+  });
+
+  it("treats a UK PropCo controlled from outside the UK as non-UK", () => {
+    expect(sdltOf(withOwner("B", nonUkOwner)).amount_gbp).toBe(sdltRes(400_000, 1, true, true).amount);
+    expect(sdltOf(withOwner("B", null)).amount_gbp).toBe(sdltRes(400_000, 1, true, false).amount);
+  });
+
+  it("does not surcharge commercial property", () => {
+    const shop = resProperty("s1", 400_000, { use: "commercial", dwellings: 0 });
+    const sc = scenarioWith([shop], ["A"]);
+    sc.structures[0].nodes = sc.structures[0].nodes.map((n) => (n.id === "buyer" ? nonUkOwner : n));
+    expect(runEngine(sc).rows.find((r) => r.stage === "acquire")!.tax).toBe("SDLT_NONRES");
+  });
+});

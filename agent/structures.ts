@@ -50,19 +50,28 @@ function ownsEach(from: string, props: StructNode[]): StructEdge[] {
 const BUYER: StructNode = { id: "buyer", kind: "investor", label: "Buyer", jurisdiction: "UK", investor_type: "uk_company" };
 const SPV: StructNode = { id: "spv", kind: "company", label: "PropCo Ltd", jurisdiction: "UK" };
 
-export function buildA(packet: Packet): Structure {
-  const props = propertyNodes(packet);
-  return { option: "A", name: OPTION_NAMES.A, rationale: "", nodes: [{ ...BUYER }, ...props], edges: ownsEach(BUYER.id, props) };
+/** A single investor buys in its own name; several investors buy through a generic UK buyer company. */
+export function buyerFor(investors: Investor[] = []): StructNode {
+  if (investors.length !== 1) return { ...BUYER };
+  const inv = investors[0];
+  return { id: BUYER.id, kind: "investor", label: inv.label, investor_type: inv.type, jurisdiction: jurisdictionOf(inv.type) };
 }
 
-export function buildB(packet: Packet): Structure {
+export function buildA(packet: Packet, investors: Investor[] = []): Structure {
   const props = propertyNodes(packet);
+  const buyer = buyerFor(investors);
+  return { option: "A", name: OPTION_NAMES.A, rationale: "", nodes: [buyer, ...props], edges: ownsEach(buyer.id, props) };
+}
+
+export function buildB(packet: Packet, investors: Investor[] = []): Structure {
+  const props = propertyNodes(packet);
+  const buyer = buyerFor(investors);
   return {
     option: "B",
     name: OPTION_NAMES.B,
     rationale: "",
-    nodes: [{ ...BUYER }, { ...SPV }, ...props],
-    edges: [{ from: BUYER.id, to: SPV.id, pct: 100 }, ...ownsEach(SPV.id, props)],
+    nodes: [buyer, { ...SPV }, ...props],
+    edges: [{ from: buyer.id, to: SPV.id, pct: 100 }, ...ownsEach(SPV.id, props)],
   };
 }
 
@@ -113,7 +122,7 @@ export function buildD(packet: Packet, investors: Investor[]): Structure {
 
 /** Pure, deterministic A, B, C, D (in that order) with fallback rationales. */
 export function buildStructureTemplates(packet: Packet, investors: Investor[]): Structure[] {
-  const s = [buildA(packet), buildB(packet), buildC(packet, investors), buildD(packet, investors)];
+  const s = [buildA(packet, investors), buildB(packet, investors), buildC(packet, investors), buildD(packet, investors)];
   for (const st of s) st.rationale = FALLBACK_RATIONALE[st.option];
   return s;
 }

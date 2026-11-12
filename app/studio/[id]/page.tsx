@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { EngineResult, Investor, OptionId, Packet, Structure } from "@/contracts";
 import { Notice } from "@/components/ui";
 import { CostMoney } from "@/components/SourceDrawer";
@@ -28,6 +28,8 @@ export default function StudioPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [changeNote, setChangeNote] = useState<string | null>(null);
+  const prev = useRef<{ preset: InvestorPreset; structures: Structure[]; result: EngineResult } | null>(null);
 
   useEffect(() => {
     const p = loadPacket(decodeURIComponent(id));
@@ -40,8 +42,11 @@ export default function StudioPage() {
     setError(null);
     try {
       const { structures } = await buildStructures(p, investors);
+      const result = await runScenario({ packet: p, structures, investors });
       setStructures(structures);
-      setResult(await runScenario({ packet: p, structures, investors }));
+      setResult(result);
+      setChangeNote(prev.current && prev.current.preset !== presetRef.current ? describeChange(prev.current, { structures, result }, investors[0]?.label ?? "these investors") : null);
+      prev.current = { preset: presetRef.current, structures, result };
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -49,7 +54,9 @@ export default function StudioPage() {
     }
   }, []);
 
+  const presetRef = useRef(preset);
   useEffect(() => {
+    presetRef.current = preset;
     if (packet) void run(packet, INVESTOR_PRESETS[preset]);
   }, [packet, preset, run]);
 
@@ -124,6 +131,11 @@ export default function StudioPage() {
         </button>
       </div>
       {error && <Notice tone="error">{error}</Notice>}
+      {changeNote && !loading && (
+        <p aria-live="polite" className="-mt-2 rounded-md border-l-[3px] border-ink bg-sheet px-3.5 py-2 text-[13px] text-ink-soft">
+          {changeNote}
+        </p>
+      )}
 
       <div className="grid min-h-0 flex-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className={`grid min-h-0 gap-4 md:grid-cols-2 md:grid-rows-2 transition-opacity ${loading ? "opacity-50" : ""}`} aria-busy={loading}>
@@ -184,4 +196,28 @@ function OptionDTimelineDark({ result }: { result: EngineResult }) {
       <OptionDTimeline result={result} />
     </div>
   );
+}
+
+/** One sentence on what switching investors changed: costs per option, then structure differences. */
+function describeChange(
+  before: { structures: Structure[]; result: EngineResult },
+  after: { structures: Structure[]; result: EngineResult },
+  who: string,
+): string {
+  const total = (r: EngineResult, o: OptionId) => (r.totals[o]?.acquire ?? 0) + (r.totals[o]?.hold ?? 0);
+  const costs = OPTIONS.flatMap((o) => {
+    const d = total(after.result, o) - total(before.result, o);
+    return d === 0 ? [] : [`${o} ${d > 0 ? "up" : "down"} ${gbp(Math.abs(d))}`];
+  });
+  const fund = (ss: Structure[]) => ss.find((s) => s.option === "C")?.nodes.find((n) => n.kind === "fund");
+  const fb = fund(before.structures);
+  const fa = fund(after.structures);
+  const structural = fb && fa && fb.label !== fa.label ? `the fund in C becomes a ${fa.jurisdiction === "Jersey" ? "Jersey " : "UK "}${fa.label}` : null;
+  const newFlags = after.result.flags.length - before.result.flags.length;
+  const parts = [
+    costs.length ? `purchase and first-year costs: ${costs.join(", ")}` : "costs are unchanged (stamp duty on these lots doesn't depend on who buys)",
+    structural,
+    newFlags > 0 ? `${newFlags} new note${newFlags > 1 ? "s" : ""} to check` : null,
+  ].filter(Boolean);
+  return `Switched to ${who}: ${parts.join("; ")}.`;
 }

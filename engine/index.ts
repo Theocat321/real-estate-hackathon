@@ -22,6 +22,7 @@ import { IHT_ENTRY_RULE, ihtEntry } from "./rules/iht_entry";
 import { IHT_TEN_YEAR_RULE, ihtTenYear } from "./rules/iht_ten_year";
 import { IHT_DEATH_COMPARATOR_RULE, ihtDeathComparator } from "./rules/iht_death_comparator";
 import { DEFAULT_SETTLOR_NRB } from "./rules/iht_base";
+import { CITE } from "./rules/citations";
 
 export { ScenarioInputSchema } from "./schema";
 
@@ -52,6 +53,25 @@ export function findBuyer(s: Structure): StructNode {
 
 export const isCompany = (n: StructNode) => n.kind === "company" || n.investor_type === "uk_company";
 
+const isNonUkNode = (n: StructNode) => n.investor_type === "family_office_nonuk" || (n.jurisdiction !== undefined && n.jurisdiction !== "UK");
+
+/**
+ * Share (0–1) of a node controlled from outside the UK. Walks up through companies;
+ * investors, trusts and funds answer for themselves (trust/fund residence follows their jurisdiction).
+ */
+export function nonUkShare(s: Structure, nodeId: string, seen = new Set<string>()): number {
+  const node = s.nodes.find((n) => n.id === nodeId);
+  if (!node || seen.has(nodeId)) return 0;
+  seen.add(nodeId);
+  if (node.kind !== "company") return isNonUkNode(node) ? 1 : 0;
+  const owners = s.edges.filter((e) => e.to === nodeId);
+  if (owners.length === 0) return isNonUkNode(node) ? 1 : 0;
+  return owners.reduce((sum, e) => sum + (e.pct / 100) * nonUkShare(s, e.from, seen), 0);
+}
+
+/** SDLT non-UK test: a non-UK buyer, or a UK company more than half controlled from outside the UK. */
+export const buyerIsNonUk = (s: Structure, buyer: StructNode) => nonUkShare(s, buyer.id) > 0.5;
+
 export function runEngine(input: ScenarioInput): EngineResult {
   const rows: CostRow[] = [];
   const flags: Flag[] = [];
@@ -69,6 +89,7 @@ export function runEngine(input: ScenarioInput): EngineResult {
     const opt = s.option;
     const buyer = findBuyer(s);
     const company = isCompany(buyer);
+    const nonUk = buyerIsNonUk(s, buyer);
     const nodeFor = (p: Property) => s.nodes.find((n) => n.kind === "property" && n.property_id === p.id)?.id ?? buyer.id;
     const spv = s.nodes.find((n) => n.kind === "company") ?? buyer;
     const flag = (f: Omit<Flag, "option">) => flags.push({ option: opt, ...f });
@@ -117,11 +138,16 @@ export function runEngine(input: ScenarioInput): EngineResult {
       );
     } else {
       for (const p of resProps) {
-        const r = sdltRes(p.price, dwellingsOf(p), company);
+        const r = sdltRes(p.price, dwellingsOf(p), company, nonUk);
         row("acquire", r.tax, nodeFor(p), r.amount, `${p.name}, bought by ${buyer.label}: ${r.formula}`, [
           priceInput(p),
           { label: "Buyer", value: `${buyer.label} (${company ? "company" : "not a company"})`, source: structureSource(opt, `buyer node ${buyer.id}`) },
-        ], SDLT_RES_RULE);
+          {
+            label: "Buyer residence for SDLT",
+            value: nonUk ? "Non-UK (2% surcharge)" : "UK",
+            source: { kind: "rule", file: "engine/index.ts#buyerIsNonUk", url: CITE.sdltNonUk, excerpt: "Non-UK buyer, or UK company controlled from outside the UK" },
+          },
+        ], nonUk ? { ...SDLT_RES_RULE, citation_url: CITE.sdltNonUk } : SDLT_RES_RULE);
         if (r.tax === "SDLT_RES_COMPANY_17") {
           flag({
             entity_id: nodeFor(p),
@@ -132,6 +158,35 @@ export function runEngine(input: ScenarioInput): EngineResult {
           });
         }
       }
+    }
+
+    // ---- Investor-specific flags ----
+    if (nonUk && resProps.length > 0 && resDwellings < NONRES_DWELLING_THRESHOLD) {
+      flag({
+        entity_id: buyer.id,
+        rule_id: "sdlt_non_uk_surcharge",
+        severity: "info",
+        message: `${buyer.label} counts as non-UK for SDLT, so homes carry a 2% surcharge.`,
+        citation_url: CITE.sdltNonUk,
+      });
+    }
+    const investorNodes = s.nodes.filter((n) => n.kind === "investor");
+    if (investorNodes.some((n) => n.investor_type === "family_office_nonuk")) {
+      flag({
+        entity_id: (investorNodes.find((n) => n.investor_type === "family_office_nonuk") ?? buyer).id,
+        rule_id: "nrcgt",
+        severity: "info",
+        message: "Non-UK investors pay UK tax on gains from UK property, including on selling shares in a property-rich company.",
+        citation_url: CITE.nrcgt,
+      });
+    }
+    if (opt === "D" && input.investors.length > 0 && !input.investors.some((i) => i.type === "family_office_uk" || i.type === "family_office_nonuk")) {
+      flag({
+        entity_id: buyer.id,
+        rule_id: "trust_settlor",
+        severity: "review",
+        message: "A family trust needs a family to settle it. None of these investors is a family, so treat D as illustrative.",
+      });
     }
 
     // ---- ATED (hold, annual) ----

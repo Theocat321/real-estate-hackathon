@@ -23,6 +23,7 @@ import type {
   StructuresResponse,
 } from "@/contracts";
 import sample from "@/fixtures/sample.json";
+import demoResidential from "@/fixtures/demo-residential.json";
 
 export const USE_FIXTURES = process.env.NEXT_PUBLIC_USE_FIXTURES !== "false";
 
@@ -59,6 +60,27 @@ interface SampleFixture {
   structures: Structure[];
 }
 export const SAMPLE = sample as unknown as SampleFixture;
+
+/**
+ * Residential sample: the real Allsop demo packet without the lot that was added to reach six homes,
+ * so it is priced at residential rates (and investor residence changes the SDLT).
+ */
+export const RESIDENTIAL_SAMPLE: Packet = (() => {
+  const full = demoResidential as unknown as Packet;
+  const items = full.items.slice(0, 5);
+  return {
+    ...full,
+    id: "pkt-sample-residential",
+    items,
+    totals: {
+      price_gbp: items.reduce((s, p) => s + (p.price_gbp?.value ?? 0), 0),
+      rent_pa_gbp: items.reduce((s, p) => s + (p.rent_pa_gbp?.value ?? 0), 0),
+      blended_yield_pct: null,
+      dwellings: items.reduce((s, p) => s + p.dwellings, 0),
+    },
+    match_reason: `Five Allsop residential auction lots in England, each sold for about ${gbpFmt.format(260_000)}.`,
+  };
+})();
 
 /* ───────────────────────── HTTP ───────────────────────── */
 
@@ -101,7 +123,8 @@ export async function match(req: MatchRequest): Promise<Packet> {
 
 /** POST /api/structures */
 export async function buildStructures(packet: Packet, investors: Investor[]): Promise<StructuresResponse> {
-  if (USE_FIXTURES) return { structures: SAMPLE.structures };
+  // Structures are deterministic templates on the server (Grok only writes rationale, with a template
+  // fallback), so this route works in fixture mode too and reflects the chosen investors.
   return postJson<StructuresResponse>("/api/structures", { packet, investors });
 }
 
@@ -149,6 +172,7 @@ export function savePacket(p: Packet): void {
 
 export function loadPacket(id: string): Packet | null {
   if (id === SAMPLE.packet.id) return SAMPLE.packet;
+  if (id === RESIDENTIAL_SAMPLE.id) return RESIDENTIAL_SAMPLE;
   if (typeof window === "undefined") return null;
   const raw = sessionStorage.getItem(key(id));
   return raw ? (JSON.parse(raw) as Packet) : null;
