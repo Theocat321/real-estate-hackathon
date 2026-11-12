@@ -20,7 +20,7 @@
             "file": "auction-results.csv",
             "record_id": "allsop-6392cf9c",
             "url": "https://www.allsop.co.uk/api/lot/7daca700-1193-11f1-a689-0242ac110002",
-            "excerpt": "achieved_price_gbp 890000 (guide £625,000 - £675,000, +42.4%)"
+            "excerpt": "achieved_price_gbp 890000 (guide \u00a3625,000 - \u00a3675,000, +42.4%)"
           }
         },
         "price_kind": "achieved",
@@ -45,7 +45,7 @@
             "file": "auction-results.csv",
             "record_id": "allsop-269dbb85",
             "url": "https://www.allsop.co.uk/api/lot/fec3e466-2930-11f1-88c6-0242ac110002",
-            "excerpt": "achieved_price_gbp 515000 (guide £400,000 - £440,000, +28.8%)"
+            "excerpt": "achieved_price_gbp 515000 (guide \u00a3400,000 - \u00a3440,000, +28.8%)"
           }
         },
         "price_kind": "achieved",
@@ -165,7 +165,7 @@
     },
     {
       "option": "C",
-      "name": "Fund (unit trust) owns the SPV",
+      "name": "Fund (unit trust) owns the properties",
       "rationale": "A Jersey property unit trust pools the pension fund and family office; gains are taxed by investor type, which suits a mixed investor base.",
       "nodes": [
         {
@@ -188,12 +188,6 @@
           "label": "JPUT",
           "fund_type": "JPUT",
           "jurisdiction": "Jersey"
-        },
-        {
-          "id": "spv",
-          "kind": "company",
-          "label": "PropCo Ltd",
-          "jurisdiction": "UK"
         },
         {
           "id": "p1",
@@ -221,16 +215,11 @@
         },
         {
           "from": "fund",
-          "to": "spv",
-          "pct": 100
-        },
-        {
-          "from": "spv",
           "to": "p1",
           "pct": 100
         },
         {
-          "from": "spv",
+          "from": "fund",
           "to": "p2",
           "pct": 100
         }
@@ -299,16 +288,19 @@
     }
   ],
   "expected_engine": {
-    "note": "Golden values. Engine tests must reproduce these exactly. totals[option][stage] = sum of CostRow.amount_gbp for that option and stage. IHT_ENTRY is stage 'acquire'. IHT_DEATH_COMPARATOR (stage 'death') is what the family would pay holding personally; the UI shows it beside D but it is not a cost of D.",
+    "note": "Golden values. Engine tests must reproduce these exactly. totals[option][stage] = sum of CostRow.amount_gbp for that option and stage. IHT_ENTRY is stage 'acquire'. IHT_DEATH_COMPARATOR (stage 'death') is what the family would pay holding personally; the UI shows it beside D but it is not a cost of D. CORP_TAX_RENT (stage 'hold'): no rent in the data, so estimated at 6.5% commercial yield: rent \u00a391,325, profit 75% = \u00a368,494; company CT 25% less marginal relief = \u00a314,401; in C the fund is transparent: pension 60% exempt, UK family office 40% at 19% = \u00a35,206.",
     "A": {
-      "acquire": 49250
+      "acquire": 49250,
+      "hold": 14401
     },
     "B": {
       "acquire": 49250,
+      "hold": 14401,
       "exit": 7025
     },
     "D": {
       "acquire": 265250,
+      "hold": 14401,
       "exit": 7025,
       "ten_year": 64800,
       "death": 432000
@@ -328,14 +320,16 @@
     },
     "C": {
       "acquire": 49250,
-      "exit": 7025
+      "hold": 5206,
+      "exit": 0
     },
     "D_breakdown": {
       "SDLT_NONRES": 49250,
       "IHT_ENTRY": 216000,
       "STAMP_DUTY_SHARES": 7025,
       "IHT_TEN_YEAR": 64800,
-      "IHT_DEATH_COMPARATOR": 432000
+      "IHT_DEATH_COMPARATOR": 432000,
+      "CORP_TAX_RENT": 14401
     }
   }
 }

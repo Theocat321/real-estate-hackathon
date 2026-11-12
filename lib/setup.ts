@@ -53,7 +53,7 @@ export function rolesFor(option: OptionId): RoleId[] {
   if (option === "A") return base;
   const company: RoleId[] = [...base, "corporate", "accountant"];
   if (option === "B") return company;
-  if (option === "C") return [...company, "fund_lawyer", "fund_admin"];
+  if (option === "C") return [...base, "accountant", "fund_lawyer", "fund_admin"];
   return [...company, "private_client", "trustee"];
 }
 
@@ -66,7 +66,10 @@ export function setupSteps(option: OptionId, structure: Structure | undefined, r
   const entry = sum((r) => r.tax === "IHT_ENTRY");
   const fund = structure?.nodes.find((n) => n.kind === "fund");
   const spv = structure?.nodes.find((n) => n.kind === "company")?.label ?? "PropCo Ltd";
-  const buyerName = option === "A" ? (structure?.nodes.find((n) => n.kind === "investor")?.label ?? "the buyer") : spv;
+  // C: the fund owns the properties directly, so there is no company to set up.
+  const hasCompany = option === "B" || option === "D";
+  const buyerName =
+    option === "A" ? (structure?.nodes.find((n) => n.kind === "investor")?.label ?? "the buyer") : option === "C" ? `the ${fund?.label ?? "fund"}'s trustee` : spv;
 
   const steps: SetupStep[] = [];
 
@@ -97,7 +100,7 @@ export function setupSteps(option: OptionId, structure: Structure | undefined, r
           },
     );
   }
-  if (option !== "A") {
+  if (hasCompany) {
     steps.push(
       {
         id: "incorporate",
@@ -112,9 +115,7 @@ export function setupSteps(option: OptionId, structure: Structure | undefined, r
         detail:
           option === "D"
             ? "The trustees are registrable as controlling the company; record them on the PSC register."
-            : option === "C"
-              ? "Record the fund's trustee or operator as the controlling party on the PSC register."
-              : "Record the owner of more than 25% of shares or votes on the PSC register.",
+            : "Record the owner of more than 25% of shares or votes on the PSC register.",
         roles: ["corporate"],
         source: { label: "People with significant control", url: GOV.psc },
       },
@@ -152,7 +153,7 @@ export function setupSteps(option: OptionId, structure: Structure | undefined, r
       source: { label: "Registering land or property", url: GOV.landRegistry },
     },
   );
-  if (option !== "A") {
+  if (hasCompany) {
     steps.push({
       id: "corp-tax",
       title: `Register ${spv} for Corporation Tax`,

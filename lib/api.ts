@@ -158,26 +158,45 @@ export function loadPacket(id: string): Packet | null {
   return raw ? (JSON.parse(raw) as Packet) : null;
 }
 
-/** A packet made of exactly the properties in an uploaded file, first one as the seed. */
-export function packetFromUpload(items: Property[], fileName: string): Packet {
-  const priced = items.filter((p) => p.price_gbp);
-  const price = priced.reduce((s, p) => s + p.price_gbp!.value, 0);
+/** Packet totals from its items: price, stated rent, yield where both are known, dwellings. */
+export function packetTotals(items: Property[]): Packet["totals"] {
+  const price = items.reduce((s, p) => s + (p.price_gbp?.value ?? 0), 0);
   const rent = items.reduce((s, p) => s + (p.rent_pa_gbp?.value ?? 0), 0);
   const both = items.filter((p) => p.price_gbp && p.rent_pa_gbp);
   const bothPrice = both.reduce((s, p) => s + p.price_gbp!.value, 0);
   const bothRent = both.reduce((s, p) => s + p.rent_pa_gbp!.value, 0);
+  return {
+    price_gbp: price,
+    rent_pa_gbp: rent,
+    blended_yield_pct: bothPrice > 0 ? Math.round((bothRent / bothPrice) * 10000) / 100 : null,
+    dwellings: items.reduce((s, p) => s + p.dwellings, 0),
+  };
+}
+
+/** Set (or clear, with null) a lot's rent as typed by the user, and save the packet. */
+export function setLotRent(packet: Packet, propertyId: string, value: number | null): Packet {
+  const items = packet.items.map((p) =>
+    p.id !== propertyId
+      ? p
+      : {
+          ...p,
+          rent_pa_gbp: value == null ? null : { value: Math.round(value), source: { kind: "user" as const, file: "packet page", excerpt: `Rent entered by you for ${p.address}` } },
+        },
+  );
+  const next = { ...packet, items, totals: packetTotals(items) };
+  savePacket(next);
+  return next;
+}
+
+/** A packet made of exactly the properties in an uploaded file, first one as the seed. */
+export function packetFromUpload(items: Property[], fileName: string): Packet {
   let h = 0;
   for (const c of items.map((p) => p.id).join("|")) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return {
     id: `pkt-upload-${h.toString(36)}`,
     seed_id: items[0].id,
     items,
-    totals: {
-      price_gbp: price,
-      rent_pa_gbp: rent,
-      blended_yield_pct: bothPrice > 0 ? Math.round((bothRent / bothPrice) * 10000) / 100 : null,
-      dwellings: items.reduce((s, p) => s + p.dwellings, 0),
-    },
+    totals: packetTotals(items),
     match_reason: `The ${items.length} properties in ${fileName}.`,
   };
 }

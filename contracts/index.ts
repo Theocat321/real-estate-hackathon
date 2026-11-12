@@ -97,7 +97,7 @@ export interface StructEdge {
 /**
  * A = buy each property directly
  * B = one UK SPV (PropCo Ltd) owns every property
- * C = fund (JPUT unit trust or RIF) owns PropCo
+ * C = fund (JPUT unit trust or RIF) owns every property directly
  * D = family discretionary trust owns PropCo
  * Every structure ends in one property node per packet item.
  */
@@ -118,7 +118,9 @@ export type TaxCode =
   | "SDLT_RES_HIGHER"
   | "SDLT_RES_COMPANY_17"
   | "STAMP_DUTY_SHARES"
+  | "STAMP_DUTY_UNITS"
   | "ATED"
+  | "CORP_TAX_RENT"
   | "IHT_ENTRY"
   | "IHT_TEN_YEAR"
   | "IHT_DEATH_COMPARATOR";

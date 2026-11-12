@@ -16,6 +16,7 @@ import { DEFAULT_SETTLOR_NRB } from "./rules/iht_base";
 import { IHT_ENTRY_RULE } from "./rules/iht_entry";
 import { COMPANY_17_THRESHOLD, SDLT_RES_RULE } from "./rules/sdlt_res";
 import { SDLT_NONRES_RULE } from "./rules/sdlt_nonres";
+import { rentFor } from "./rules/rent";
 
 const OPTIONS: OptionId[] = ["A", "B", "C", "D"];
 const PRICED_NATIONS = new Set(["england", "ni"]);
@@ -122,6 +123,11 @@ function priceCliffs(input: ScenarioInput, base: EngineResult): Cliff[] {
         j === idx
           ? {
               ...q,
+              // Paying less doesn't change the rent: pin it at today's figure.
+              rent_pa_gbp: q.rent_pa_gbp ?? (() => {
+                const r = rentFor(q, q.price_gbp!.value);
+                return { value: r.value, source: r.source };
+              })(),
               price_gbp: {
                 value: newPrice,
                 source: { kind: "user" as const, file: "what-if", excerpt: `${short(q)} at £${fmt(newPrice)} instead of £${fmt(q.price_gbp!.value)}` },

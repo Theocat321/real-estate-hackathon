@@ -17,6 +17,9 @@ import { fmt } from "./money";
 import { SDLT_NONRES_RULE, sdltNonRes } from "./rules/sdlt_nonres";
 import { SDLT_RES_RULE, sdltRes } from "./rules/sdlt_res";
 import { STAMP_DUTY_SHARES_FLAG, STAMP_DUTY_SHARES_RULE, stampDutyShares } from "./rules/stamp_duty_shares";
+import { STAMP_DUTY_UNITS_FLAG, STAMP_DUTY_UNITS_RULE, stampDutyUnits } from "./rules/stamp_duty_units";
+import { CORP_TAX_RULE, PENSION_EXEMPT_RULE, corpTax } from "./rules/corp_tax";
+import { PROFIT_SHARE_OF_RENT, rentFor } from "./rules/rent";
 import { ATED_FLAG, ATED_RULE, ated } from "./rules/ated";
 import { IHT_ENTRY_RULE, ihtEntry } from "./rules/iht_entry";
 import { IHT_TEN_YEAR_RULE, ihtTenYear } from "./rules/iht_ten_year";
@@ -56,7 +59,21 @@ export function findBuyer(s: Structure): StructNode {
   return fallback;
 }
 
-export const isCompany = (n: StructNode) => n.kind === "company" || n.investor_type === "uk_company";
+/** Company for SDLT and ATED. A unit trust (fund) is treated as a company for both (FA 2003 s101; ATED covers collective investment schemes). */
+export const isCompany = (n: StructNode) => n.kind === "company" || n.kind === "fund" || n.investor_type === "uk_company";
+
+/**
+ * Who is taxed on the rent, with their share. Companies pay corporation tax themselves; a fund is
+ * transparent for income (RIF, or JPUT with a transparency election), so its investors are taxed on their share.
+ */
+export function rentPayers(s: Structure, nodeId: string, share = 1, seen = new Set<string>()): { node: StructNode; share: number }[] {
+  const node = s.nodes.find((n) => n.id === nodeId);
+  if (!node || seen.has(nodeId)) return [];
+  seen.add(nodeId);
+  const owners = s.edges.filter((e) => e.to === nodeId);
+  if (node.kind === "fund" && owners.length > 0) return owners.flatMap((e) => rentPayers(s, e.from, (share * e.pct) / 100, seen));
+  return [{ node, share }];
+}
 
 const isNonUkNode = (n: StructNode) => n.investor_type === "family_office_nonuk" || (n.jurisdiction !== undefined && n.jurisdiction !== "UK");
 
@@ -209,8 +226,48 @@ export function runEngine(input: ScenarioInput): EngineResult {
       if (anyAted) flag({ entity_id: buyer.id, rule_id: ATED_RULE.id, severity: "info", message: ATED_FLAG, citation_url: ATED_RULE.citation_url });
     }
 
-    // ---- Stamp duty on PropCo shares (exit) ----
-    if (opt !== "A" && priced.length > 0) {
+    // ---- Tax on rent (hold, annual) ----
+    if (priced.length > 0) {
+      const rents = priced.map((p) => ({ p, r: rentFor(p, p.price) }));
+      const rent = rents.reduce((t, x) => t + x.r.value, 0);
+      const profit = Math.round(rent * PROFIT_SHARE_OF_RENT);
+      const rentInputs: Input[] = [
+        ...rents.map(({ p, r }) => ({ label: `${p.name} rent a year${r.estimated ? " (estimated)" : ""}`, value: r.value, source: r.source })),
+        { label: "Taxable profit share of rent", value: `${PROFIT_SHARE_OF_RENT * 100}%`, source: { kind: "rule" as const, file: "engine/rules/rent.ts", excerpt: "Assumed running costs of 25% of rent; no loan interest" } },
+      ];
+      for (const { node, share } of rentPayers(s, buyer.id)) {
+        const part = Math.round(profit * share);
+        const of = share < 1 ? ` (${Math.round(share * 100)}% share via ${buyer.label})` : "";
+        const inputs = share < 1 ? [...rentInputs, { label: `${node.label} share`, value: `${Math.round(share * 100)}%`, source: structureSource(opt, `edge into ${buyer.id}`) }] : rentInputs;
+        if (node.investor_type === "uk_pension") {
+          row("hold", "CORP_TAX_RENT", node.id, 0, `${node.label}${of}: a registered pension scheme pays no tax on £${fmt(part)} rental profit = £0`, inputs, PENSION_EXEMPT_RULE);
+          continue;
+        }
+        const t = corpTax(part);
+        const who = node.kind === "investor" && node.investor_type !== "uk_company" ? `${node.label}, taxed as a company` : node.label;
+        row("hold", "CORP_TAX_RENT", node.id, t.amount, `${who}${of}, on £${fmt(rent)} rent less 25% costs: ${t.formula}`, inputs, CORP_TAX_RULE);
+        if (node.investor_type === "family_office_uk" || node.investor_type === "family_office_nonuk") {
+          flag({ entity_id: node.id, rule_id: CORP_TAX_RULE.id, severity: "review", message: `${node.label} is taxed as a company on rent. Individuals or a trust pay income tax instead.`, citation_url: CORP_TAX_RULE.citation_url });
+        }
+      }
+      const est = rents.filter((x) => x.r.estimated).length;
+      if (est > 0) {
+        flag({
+          entity_id: buyer.id,
+          rule_id: "rent_estimate",
+          severity: "review",
+          message: `${est === priced.length ? "All" : `${est} of ${priced.length}`} lots have no rent in the data, so rent is estimated from a typical yield. Enter the real rent on the packet page.`,
+        });
+      }
+    }
+
+    // ---- Exit: a fund sells its units (no stamp duty); otherwise PropCo shares are sold ----
+    const fund = s.nodes.find((n) => n.kind === "fund");
+    if (opt !== "A" && priced.length > 0 && fund) {
+      const r = stampDutyUnits(fund.label, fund.jurisdiction);
+      row("exit", "STAMP_DUTY_UNITS", fund.id, r.amount, r.formula, allPriceInputs, STAMP_DUTY_UNITS_RULE);
+      flag({ entity_id: fund.id, rule_id: STAMP_DUTY_UNITS_RULE.id, severity: "review", message: STAMP_DUTY_UNITS_FLAG, citation_url: STAMP_DUTY_UNITS_RULE.citation_url });
+    } else if (opt !== "A" && priced.length > 0) {
       const r = stampDutyShares(packetPrice);
       row("exit", "STAMP_DUTY_SHARES", spv.id, r.amount, `Sale of ${spv.label} shares: ${r.formula}`, allPriceInputs, STAMP_DUTY_SHARES_RULE);
       flag({ entity_id: spv.id, rule_id: STAMP_DUTY_SHARES_RULE.id, severity: "info", message: STAMP_DUTY_SHARES_FLAG, citation_url: STAMP_DUTY_SHARES_RULE.citation_url });

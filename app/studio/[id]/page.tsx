@@ -304,7 +304,11 @@ export default function StudioPage() {
                 const v = saleSaving(result, tab);
                 const parts: [string, number, typeof v.rows.direct][] = [
                   ["Buyer's SDLT, bought directly", v.directSdlt, v.rows.direct],
-                  [tab === "A" ? "Buyer's SDLT, this sale" : "Buyer's stamp duty on shares", v.saleDuty, v.rows.sale],
+                  [
+                    tab === "A" ? "Buyer's SDLT, this sale" : v.rows.sale[0]?.tax === "STAMP_DUTY_UNITS" ? "Buyer's stamp duty on fund units" : "Buyer's stamp duty on shares",
+                    v.saleDuty,
+                    v.rows.sale,
+                  ],
                 ];
                 return (
                   <>
@@ -413,7 +417,7 @@ export default function StudioPage() {
                   <div className="mt-2 h-44">{result && <SaleChart result={result} options={shown} />}</div>
                   <div className="mt-3">{result && <SaleTable result={result} best={soleBest} onPick={setTab} options={shown} />}</div>
                   <p className="mt-2 text-[11px] text-faint">
-                    Selling the company instead of the properties: the next buyer pays 0.5% stamp duty on the shares, not SDLT on the properties. The saving is theirs, so a seller can ask for some of it in the price. Today&apos;s prices; capital gains tax not counted.
+                    Selling the company or fund instead of the properties: the next buyer pays 0.5% stamp duty on company shares, or none on fund units, instead of SDLT on the properties. The saving is theirs, so a seller can ask for some of it in the price. Today&apos;s prices; capital gains tax not counted.
                   </p>
                 </>
               ) : (

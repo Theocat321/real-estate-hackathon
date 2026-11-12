@@ -69,6 +69,23 @@ describe("golden sample fixture", () => {
     for (const o of ["A", "B", "C", "D"] as const) expect(result.totals[o]).toEqual(golden[o]);
   });
 
+  it("C sells fund units with no stamp duty; B sells PropCo shares at 0.5%", () => {
+    const exit = (o: "B" | "C") => result.rows.filter((r) => r.option === o && r.stage === "exit");
+    expect(exit("C")).toMatchObject([{ tax: "STAMP_DUTY_UNITS", amount_gbp: 0, entity_id: "fund" }]);
+    expect(exit("C")[0].formula).toContain("Jersey");
+    expect(exit("B")).toMatchObject([{ tax: "STAMP_DUTY_SHARES", amount_gbp: 7025 }]);
+  });
+
+  it("tax on rent: PropCo pays corporation tax; through the fund the pension's share is exempt", () => {
+    const rent = (o: "B" | "C") => result.rows.filter((r) => r.option === o && r.tax === "CORP_TAX_RENT");
+    expect(rent("B")).toMatchObject([{ entity_id: "spv", amount_gbp: 14_401 }]);
+    expect(rent("C")).toMatchObject([
+      { entity_id: "inv1", amount_gbp: 0 },
+      { entity_id: "inv2", amount_gbp: 5_206 },
+    ]);
+    expect(result.flags.some((f) => f.rule_id === "rent_estimate")).toBe(true);
+  });
+
   it("D breakdown by tax", () => {
     const d = result.rows.filter((r) => r.option === "D");
     const byTax: Record<string, number> = {};
@@ -81,7 +98,7 @@ describe("golden sample fixture", () => {
       expect(r.formula.length).toBeGreaterThan(10);
       expect(r.inputs.length).toBeGreaterThan(0);
       for (const i of r.inputs) expect(i.source.file).toBeTruthy();
-      expect(r.rule.citation_url).toMatch(/^https:\/\/www\.gov\.uk\//);
+      expect(r.rule.citation_url).toMatch(/^https:\/\/www\.(legislation\.)?gov\.uk\//);
       expect(r.rule.as_of).toBe("2026-27");
       expect(Number.isInteger(r.amount_gbp)).toBe(true);
       expect(scenario.structures.find((s) => s.option === r.option)!.nodes.some((n) => n.id === r.entity_id)).toBe(true);
@@ -133,7 +150,7 @@ describe("residential rules", () => {
   it("£1,100,000 company-held dwelling -> ATED = 9450", () => {
     expect(ated(1_100_000, 1).amount).toBe(golden.residential_checks.ATED_1100000_company_held_2026_27);
     const r = runEngine(scenarioWith([resProperty("h", 1_100_000)]));
-    expect(r.totals.B.hold).toBe(9_450);
+    expect(r.rows.filter((x) => x.tax === "ATED").reduce((t, x) => t + x.amount_gbp, 0)).toBe(9_450);
   });
 
   it("6-dwelling residential packet -> SDLT_NONRES on the total", () => {
@@ -229,5 +246,20 @@ describe("non-UK resident SDLT surcharge", () => {
     const sc = scenarioWith([shop], ["A"]);
     sc.structures[0].nodes = sc.structures[0].nodes.map((n) => (n.id === "buyer" ? nonUkOwner : n));
     expect(runEngine(sc).rows.find((r) => r.stage === "acquire")!.tax).toBe("SDLT_NONRES");
+  });
+});
+
+describe("corporation tax on rent", () => {
+  it("19% to £50k, 25% from £250k, marginal relief between", async () => {
+    const { corpTax } = await import("../rules/corp_tax");
+    expect(corpTax(40_000).amount).toBe(7_600);
+    expect(corpTax(300_000).amount).toBe(75_000);
+    expect(corpTax(100_000).amount).toBe(22_750); // 25,000 - 150,000 x 3/200
+  });
+  it("uses stated rent over an estimate", async () => {
+    const { rentFor } = await import("../rules/rent");
+    const p = resProperty("h", 400_000, { rent_pa_gbp: { value: 30_000, source: { kind: "listing", file: "listings.csv", row: 2 } } });
+    expect(rentFor(p, 400_000)).toMatchObject({ value: 30_000, estimated: false });
+    expect(rentFor(resProperty("h", 400_000), 400_000)).toMatchObject({ value: 20_000, estimated: true });
   });
 });

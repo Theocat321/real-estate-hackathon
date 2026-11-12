@@ -37,7 +37,7 @@ const PARTS: Part[] = ["purchase", "yearly", "tenYear", "death", "sale"];
 /** Drawer note for the sale part: how the amount got back was worked out. */
 export function saleNote(result: EngineResult, o: OptionId, a: Assumptions): string {
   const s = saleSaving(result, o);
-  return `Next buyer pays ${gbp(s.saleDuty)} stamp duty on the shares instead of ${gbp(s.directSdlt)} SDLT buying the properties, saving ${gbp(s.saving)}. Assumes you get ${Math.round(a.saleShare * 100)}% of that back in the price. Today's prices.`;
+  return `Next buyer pays ${gbp(s.saleDuty)} stamp duty on the ${s.rows.sale[0]?.tax === "STAMP_DUTY_UNITS" ? "fund units" : "shares"} instead of ${gbp(s.directSdlt)} SDLT buying the properties, saving ${gbp(s.saving)}. Assumes you get ${Math.round(a.saleShare * 100)}% of that back in the price. Today's prices.`;
 }
 
 /** Stacked bar: what each option costs over the chosen period. */

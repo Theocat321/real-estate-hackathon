@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import type { Packet, Property, Sourced } from "@/contracts";
 import { PartsMoney, SourcedMoney } from "@/components/SourceDrawer";
 import { Figure, UseTag } from "@/components/ui";
-import { INVESTOR_PRESETS, baseOf, gbp, loadPacket, type InvestorPreset } from "@/lib/api";
+import { INVESTOR_PRESETS, baseOf, gbp, loadPacket, setLotRent, type InvestorPreset } from "@/lib/api";
+import { DEFAULT_GROSS_YIELD_PCT, rentFor } from "@/engine/rules/rent";
 
 export default function PacketPage() {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +38,9 @@ export default function PacketPage() {
   const base = baseOf(packet.id);
   const homesRes = packet.items.filter((p) => p.use === "residential").reduce((n, p) => n + Math.max(1, p.dwellings), 0);
   const anyYield = packet.items.some((p) => p.yield_pct);
+  const rentOf = (p: Property) => (p.price_gbp ? rentFor(p, p.price_gbp.value) : null);
+  const estimated = packet.items.filter((p) => rentOf(p)?.estimated);
+  const rentTotal = packet.items.reduce((s, p) => s + (rentOf(p)?.value ?? 0), 0);
   const homesMixed = packet.items.filter((p) => p.use === "mixed").reduce((n, p) => n + p.dwellings, 0);
 
   function removeAdded() {
@@ -101,6 +105,7 @@ export default function PacketPage() {
                   <th className="px-2 font-medium">Use</th>
                   <th className="px-2 text-right font-medium">Price</th>
                   {anyYield && <th className="px-2 text-right font-medium">Yield</th>}
+                  <th className="px-2 text-right font-medium">Rent a year</th>
                   <th className="px-4 font-medium">Source</th>
                 </tr>
               </thead>
@@ -132,6 +137,9 @@ export default function PacketPage() {
                           <SourcedMoney title={`Yield, ${p.address}`} sourced={p.yield_pct} format="pct" />
                         </td>
                       )}
+                      <td className="whitespace-nowrap px-2 text-right">
+                        <RentCell p={p} estimate={rentOf(p)} onSet={(v) => setPacket(setLotRent(packet, p.id, v))} />
+                      </td>
                       <td className="whitespace-nowrap px-4">
                         <SourceLink p={p} />
                       </td>
@@ -141,6 +149,12 @@ export default function PacketPage() {
               </tbody>
             </table>
           </div>
+          {estimated.length > 0 && (
+            <p className="mt-2 text-[13px] text-edge">
+              {estimated.length === packet.items.length ? "No lot has" : `${estimated.length} of ${packet.items.length} lots have no`} rent in the data, so the tax on rent uses a
+              typical gross yield ({DEFAULT_GROSS_YIELD_PCT.residential}% residential, {DEFAULT_GROSS_YIELD_PCT.commercial}% commercial). Type the real rent to replace it.
+            </p>
+          )}
         </section>
       </div>
 
@@ -156,7 +170,7 @@ export default function PacketPage() {
             />
           </p>
           <p className="mt-2 text-[13px] text-muted">{mix(packet.items)}</p>
-          {(homesRes > 0 || homesMixed > 0 || packet.totals.rent_pa_gbp > 0) && (
+          {(homesRes > 0 || homesMixed > 0 || rentTotal > 0) && (
             <dl className="mt-4 space-y-2 border-t border-rule-soft pt-3 text-[14px]">
               {(homesRes > 0 || homesMixed > 0) && (
                 <Row label="Homes">
@@ -166,13 +180,16 @@ export default function PacketPage() {
                   </span>
                 </Row>
               )}
-              {packet.totals.rent_pa_gbp > 0 && (
-                <Row label="Rent a year">
+              {rentTotal > 0 && (
+                <Row label={estimated.length > 0 ? `Rent a year, ${estimated.length} estimated` : "Rent a year"}>
                   <PartsMoney
                     title="Packet rent a year"
-                    display={gbp(packet.totals.rent_pa_gbp)}
-                    note="Sum of passing rent where the source data states it."
-                    parts={parts(packet.items, (p) => p.rent_pa_gbp)}
+                    display={gbp(rentTotal)}
+                    note="Stated or entered rent, else the price times a typical gross yield (marked estimated)."
+                    parts={packet.items.flatMap((p) => {
+                      const r = rentOf(p);
+                      return r ? [{ label: `${p.address}${r.estimated ? " (estimated)" : ""}`, sourced: { value: r.value, source: r.source } }] : [];
+                    })}
                   />
                 </Row>
               )}
@@ -257,6 +274,36 @@ function SourceLink({ p }: { p: Property }) {
     </a>
   ) : (
     <span className="narrow text-[13px] text-muted">{text}</span>
+  );
+}
+
+/** Stated rent (from the data), or a box to type it, showing the estimate until then. */
+function RentCell({ p, estimate, onSet }: { p: Property; estimate: ReturnType<typeof rentFor> | null; onSet: (v: number | null) => void }) {
+  const entered = p.rent_pa_gbp?.source.kind === "user";
+  const [text, setText] = useState(entered ? String(p.rent_pa_gbp!.value) : "");
+  if (!estimate) return <span className="text-faint">—</span>;
+  if (p.rent_pa_gbp && !entered) return <SourcedMoney title={`Rent a year, ${p.address}`} sourced={p.rent_pa_gbp} />;
+  if (p.yield_pct && !entered) return <span className="tabular" title="Price x stated yield">{gbp(estimate.value)}</span>;
+  const commit = () => {
+    const v = Number(text.replace(/[£,\s]/g, ""));
+    onSet(text.trim() && v > 0 ? v : null);
+  };
+  return (
+    <label className="inline-flex items-center justify-end gap-1">
+      <span className="sr-only">Rent a year for {p.address}</span>
+      <span className="text-muted">£</span>
+      <input
+        inputMode="numeric"
+        placeholder={`${estimate.value.toLocaleString("en-GB")} est.`}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+        className={`tabular w-28 rounded-[3px] border px-2 py-1 text-right text-[14px] outline-none focus:bg-sheet ${
+          entered ? "border-rule bg-sheet" : "border-edge bg-edge-soft placeholder:text-edge/70"
+        }`}
+      />
+    </label>
   );
 }
 

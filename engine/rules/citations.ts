@@ -2,6 +2,12 @@ export const AS_OF = "2026-27";
 export const CITE = {
   sdlt: "https://www.gov.uk/stamp-duty-land-tax",
   shares: "https://www.gov.uk/hmrc-internal-manuals/stamp-taxes-shares-manual/stsm013010",
+  /** Stamp duty and SDRT exemptions for transfers of Reserved Investor Fund units. */
+  rifUnits: "https://www.gov.uk/hmrc-internal-manuals/stamp-taxes-shares-manual/stsm101320",
+  /** Corporation tax rates, small profits rate and marginal relief. */
+  corpTax: "https://www.gov.uk/guidance/corporation-tax-marginal-relief",
+  /** FA 2004 s186: registered pension schemes are exempt from income tax on investment income. */
+  pensionExempt: "https://www.legislation.gov.uk/ukpga/2004/12/section/186",
   ated: "https://www.gov.uk/guidance/annual-tax-on-enveloped-dwellings-the-basics",
   /** 2% surcharge on residential SDLT for non-UK resident buyers, incl. UK close companies controlled by non-residents. */
   sdltNonUk: "https://www.gov.uk/guidance/rates-of-stamp-duty-land-tax-for-non-uk-residents",

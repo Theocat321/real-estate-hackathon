@@ -11,6 +11,7 @@ const result = {
     row("B", "acquire", "SDLT_NONRES", 152_450),
     row("B", "hold", "ATED", 9_200),
     row("B", "exit", "STAMP_DUTY_SHARES", 16_300),
+    row("C", "exit", "STAMP_DUTY_UNITS", 0),
     row("D", "acquire", "IHT_ENTRY", 500_000),
     row("D", "exit", "STAMP_DUTY_SHARES", 16_300),
   ],
@@ -23,6 +24,9 @@ describe("saleSaving", () => {
   });
   it("uses only SDLT, not trust entry charges, as the direct-purchase benchmark", () => {
     expect(saleSaving(result, "D").saving).toBe(136_150);
+  });
+  it("saves the full SDLT when fund units are sold free of stamp duty", () => {
+    expect(saleSaving(result, "C")).toMatchObject({ saleDuty: 0, saving: 152_450 });
   });
   it("saves nothing when buying directly", () => {
     expect(saleSaving(result, "A")).toMatchObject({ directSdlt: 152_450, saleDuty: 152_450, saving: 0 });

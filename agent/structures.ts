@@ -5,7 +5,7 @@
  * we fall back to fixed template text, so /api/structures always answers.
  *
  * Node ids: properties p1..pn (packet order), PropCo "spv", owner in A/B "buyer",
- * C investors inv1..invk + "fund", D "settlor" + "trust".
+ * C investors inv1..invk + "fund" (owns the properties), D "settlor" + "trust".
  */
 import { z } from "zod";
 import type { Investor, InvestorType, OptionId, Packet, Property, StructEdge, StructNode, Structure } from "./contract";
@@ -15,14 +15,14 @@ import { grokJson, type Transport } from "./grok";
 export const OPTION_NAMES: Record<OptionId, string> = {
   A: "Buy each property directly",
   B: "One UK SPV owns the portfolio",
-  C: "Fund (unit trust) owns the SPV",
+  C: "Fund (unit trust) owns the properties",
   D: "Family trust owns the SPV",
 };
 
 export const FALLBACK_RATIONALE: Record<OptionId, string> = {
   A: "The buyer owns each building outright. Simplest, but stamp duty land tax is paid on every purchase and every later sale is an asset sale.",
   B: "PropCo Ltd buys the buildings once, so a later sale can be of PropCo's shares instead of each building, but the buyer inherits PropCo's history.",
-  C: "A fund pools the investors above PropCo, and gains are taxed by investor type, which suits a mixed investor base.",
+  C: "A fund pools the investors and owns the buildings. Rent and gains are taxed by investor type, so tax-exempt investors stay exempt.",
   D: "A discretionary trust holds PropCo for the family: an inheritance-tax entry charge now in exchange for keeping the portfolio out of the family's estates.",
 };
 
@@ -102,8 +102,8 @@ export function buildC(packet: Packet, investors: Investor[]): Structure {
     option: "C",
     name: OPTION_NAMES.C,
     rationale: "",
-    nodes: [...invNodes, fund, { ...SPV }, ...props],
-    edges: [...invNodes.map((n, i) => ({ from: n.id, to: fund.id, pct: invs[i].pct })), { from: fund.id, to: SPV.id, pct: 100 }, ...ownsEach(SPV.id, props)],
+    nodes: [...invNodes, fund, ...props],
+    edges: [...invNodes.map((n, i) => ({ from: n.id, to: fund.id, pct: invs[i].pct })), ...ownsEach(fund.id, props)],
   };
 }
 
