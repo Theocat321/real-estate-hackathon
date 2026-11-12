@@ -1,10 +1,10 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { CostRow, EngineResult, Flag, OptionId, Stage } from "@/contracts";
 import { CostMoney } from "@/components/SourceDrawer";
 import { OPTIONS, gbp } from "@/lib/api";
-import { HORIZON_LABEL, breakdown, saleSaving, type Breakdown, type Horizon } from "@/lib/horizon";
+import { DEFAULT_ASSUMPTIONS, HORIZON_LABEL, breakdown, saleSaving, type Assumptions, type Breakdown, type Horizon } from "@/lib/horizon";
 
 export const STAGE_LABEL: Record<Stage, string> = {
   acquire: "On purchase",
@@ -21,17 +21,29 @@ const STAGE_COLOR: Record<Stage, string> = {
   death: "#cdd5d0",
 };
 
-const k = (v: number) => (v >= 1000 ? `£${Math.round(v / 1000)}k` : `£${v}`);
+const k = (v: number) => (Math.abs(v) >= 1000 ? `${v < 0 ? "−" : ""}£${Math.round(Math.abs(v) / 1000)}k` : `${v < 0 ? "−" : ""}£${Math.abs(v)}`);
 
-const PART_COLOR = { purchase: "#17262a", yearly: "#5e8a7c", tenYear: "#9fb8ae", death: "#b8202f" } as const;
-const PART_LABEL = { purchase: "On purchase", yearly: "Yearly charges", tenYear: "10-year trust charges", death: "Inheritance tax on a death" } as const;
+const PART_COLOR = { purchase: "#17262a", yearly: "#5e8a7c", tenYear: "#9fb8ae", death: "#b8202f", sale: "#c9a227" } as const;
+const PART_LABEL = {
+  purchase: "On purchase",
+  yearly: "Yearly charges",
+  tenYear: "10-year trust charges",
+  death: "Inheritance tax on a death",
+  sale: "Back in the sale price",
+} as const;
 type Part = keyof typeof PART_COLOR;
-const PARTS: Part[] = ["purchase", "yearly", "tenYear", "death"];
+const PARTS: Part[] = ["purchase", "yearly", "tenYear", "death", "sale"];
+
+/** Drawer note for the sale part: how the amount got back was worked out. */
+export function saleNote(result: EngineResult, o: OptionId, a: Assumptions): string {
+  const s = saleSaving(result, o);
+  return `Next buyer pays ${gbp(s.saleDuty)} stamp duty on the shares instead of ${gbp(s.directSdlt)} SDLT buying the properties, saving ${gbp(s.saving)}. Assumes you get ${Math.round(a.saleShare * 100)}% of that back in the price. Today's prices.`;
+}
 
 /** Stacked bar: what each option costs over the chosen period. */
-export function TotalsChart({ result, horizon, family }: { result: EngineResult; horizon: Horizon; family: boolean }) {
-  const b = Object.fromEntries(OPTIONS.map((o) => [o, breakdown(result, o, horizon, family)])) as Record<OptionId, Breakdown>;
-  const parts = PARTS.filter((p) => OPTIONS.some((o) => b[o][p] > 0));
+export function TotalsChart({ result, horizon, family, assume = DEFAULT_ASSUMPTIONS }: { result: EngineResult; horizon: Horizon; family: boolean; assume?: Assumptions }) {
+  const b = Object.fromEntries(OPTIONS.map((o) => [o, breakdown(result, o, horizon, family, assume)])) as Record<OptionId, Breakdown>;
+  const parts = PARTS.filter((p) => OPTIONS.some((o) => b[o][p] !== 0));
   const data = OPTIONS.map((o) => ({ option: o, ...Object.fromEntries(parts.map((p) => [p, b[o][p]])) }));
   return (
     <div className="flex h-full flex-col">
@@ -45,10 +57,11 @@ export function TotalsChart({ result, horizon, family }: { result: EngineResult;
       </ul>
       <div className="min-h-0 flex-1">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="28%">
+          <BarChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="28%" stackOffset="sign">
             <CartesianGrid vertical={false} stroke="#e2e7e3" />
             <XAxis dataKey="option" tick={{ fontSize: 12, fill: "#17262a", fontWeight: 600 }} axisLine={{ stroke: "#cdd5d0" }} tickLine={false} />
             <YAxis tickFormatter={k} tick={{ fontSize: 11, fill: "#5e6f6b" }} axisLine={false} tickLine={false} width={44} />
+            {parts.includes("sale") && <ReferenceLine y={0} stroke="#17262a" />}
             <Tooltip
               formatter={(v, name) => [gbp(Number(v)), name]}
               labelFormatter={(l) => `Option ${l}`}
@@ -56,7 +69,7 @@ export function TotalsChart({ result, horizon, family }: { result: EngineResult;
               contentStyle={{ borderRadius: 4, border: "1px solid #cdd5d0", fontSize: 12 }}
             />
             {parts.map((p, i) => (
-              <Bar key={p} dataKey={p} stackId="cost" name={PART_LABEL[p]} fill={PART_COLOR[p]} radius={i === parts.length - 1 ? [2, 2, 0, 0] : 0} isAnimationActive={false} />
+              <Bar key={p} dataKey={p} stackId="cost" name={PART_LABEL[p]} fill={PART_COLOR[p]} radius={p === "sale" ? [0, 0, 2, 2] : i === parts.filter((x) => x !== "sale").length - 1 ? [2, 2, 0, 0] : 0} isAnimationActive={false} />
             ))}
           </BarChart>
         </ResponsiveContainer>
@@ -72,16 +85,18 @@ export function TotalsTable({
   family,
   best,
   onPick,
+  assume = DEFAULT_ASSUMPTIONS,
 }: {
   result: EngineResult;
   horizon: Horizon;
   family: boolean;
   best?: OptionId | null;
   onPick?: (o: OptionId) => void;
+  assume?: Assumptions;
 }) {
-  const b = Object.fromEntries(OPTIONS.map((o) => [o, breakdown(result, o, horizon, family)])) as Record<OptionId, Breakdown>;
-  const parts = PARTS.filter((p) => OPTIONS.some((o) => b[o][p] > 0));
-  const short: Record<Part, string> = { purchase: "Purchase", yearly: "Yearly", tenYear: "10-year", death: "Death" };
+  const b = Object.fromEntries(OPTIONS.map((o) => [o, breakdown(result, o, horizon, family, assume)])) as Record<OptionId, Breakdown>;
+  const parts = PARTS.filter((p) => OPTIONS.some((o) => b[o][p] !== 0));
+  const short: Record<Part, string> = { purchase: "Purchase", yearly: "Yearly", tenYear: "10-year", death: "Death", sale: "Sale" };
   return (
     <table className="w-full text-[13px]">
       <thead>
@@ -112,7 +127,12 @@ export function TotalsTable({
                 {b[o][p] === 0 ? (
                   <span className="text-faint">—</span>
                 ) : (
-                  <CostMoney title={`Option ${o}, ${PART_LABEL[p].toLowerCase()}, ${HORIZON_LABEL[horizon].toLowerCase()}`} rows={b[o].rows[p]} amount={b[o][p]} />
+                  <CostMoney
+                    title={`Option ${o}, ${PART_LABEL[p].toLowerCase()}, ${HORIZON_LABEL[horizon].toLowerCase()}`}
+                    rows={b[o].rows[p]}
+                    amount={b[o][p]}
+                    note={p === "sale" ? saleNote(result, o, assume) : undefined}
+                  />
                 )}
               </td>
             ))}

@@ -30,7 +30,20 @@ describe("saleSaving", () => {
 });
 
 describe("breakdown", () => {
-  it("is unchanged for holding periods", () => {
-    expect(breakdown(result, "B", "25y", false).total).toBe(152_450 + 9_200 * 25);
+  const noRelief = { atedRelief: false, saleShare: 0.5 };
+  it("counts ATED every year without relief", () => {
+    expect(breakdown(result, "B", "25y", false, noRelief).total).toBe(152_450 + 9_200 * 25);
+  });
+  it("drops ATED with rental-business relief", () => {
+    expect(breakdown(result, "B", "25y", false, { ...noRelief, atedRelief: true }).total).toBe(152_450);
+  });
+  it("nets the seller's share of the buyer's saving off when selling at the end", () => {
+    const b = breakdown(result, "B", "25y_sell", false, { atedRelief: true, saleShare: 0.5 });
+    expect(b.sale).toBe(-68_075);
+    expect(b.total).toBe(152_450 - 68_075);
+    expect(breakdown(result, "A", "25y_sell", false, { atedRelief: true, saleShare: 0.5 }).sale).toBe(0);
+  });
+  it("gets nothing back if the seller keeps none of the saving", () => {
+    expect(breakdown(result, "B", "25y_sell", false, { atedRelief: true, saleShare: 0 }).sale).toBe(0);
   });
 });

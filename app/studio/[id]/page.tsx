@@ -10,8 +10,8 @@ import type { Cliff } from "@/engine/cliffs";
 import type { OptimiseResult } from "@/engine/optimise";
 import { CostMoney } from "@/components/SourceDrawer";
 import { StructureChart } from "@/components/StructureChart";
-import { FlagList, OptionDTimeline, SaleChart, SaleTable, TotalsChart, TotalsTable } from "@/components/StudioPanels";
-import { HORIZONS, HORIZON_LABEL, breakdown, isFamily, saleSaving, type Horizon } from "@/lib/horizon";
+import { FlagList, OptionDTimeline, SaleChart, SaleTable, TotalsChart, TotalsTable, saleNote } from "@/components/StudioPanels";
+import { DEFAULT_ASSUMPTIONS, HORIZONS, HORIZON_LABEL, breakdown, isFamily, paysAted, saleSaving, type Assumptions, type Horizon } from "@/lib/horizon";
 import {
   INVESTOR_PRESETS,
   OPTIONS,
@@ -36,7 +36,8 @@ export default function StudioPage() {
   const [exporting, setExporting] = useState(false);
   const [cliffs, setCliffs] = useState<Cliff[] | null>(null);
   const [tab, setTab] = useState<OptionId>("A");
-  const [horizon, setHorizon] = useState<Horizon>("25y");
+  const [horizon, setHorizon] = useState<Horizon>("25y_sell");
+  const [assume, setAssume] = useState<Assumptions>(DEFAULT_ASSUMPTIONS);
   const [panelOpen, setPanelOpen] = useState(true);
   const [changeNote, setChangeNote] = useState<string | null>(null);
   const prev = useRef<{ preset: InvestorPreset; structures: Structure[]; result: EngineResult } | null>(null);
@@ -112,7 +113,9 @@ export default function StudioPage() {
   const seed = packet.items.find((p) => p.id === packet.seed_id) ?? packet.items[0];
   const family = isFamily(INVESTOR_PRESETS[preset]);
   const onSale = horizon === "sale";
-  const totalOf = (o: OptionId) => (result ? breakdown(result, o, horizon, family).total : Infinity);
+  const totalOf = (o: OptionId) => (result ? breakdown(result, o, horizon, family, assume).total : Infinity);
+  const showRelief = !!result && paysAted(result) && horizon !== "purchase" && !onSale;
+  const showShare = horizon === "25y_sell";
   const savingOf = (o: OptionId) => (result ? saleSaving(result, o).saving : 0);
   // On sale, higher is better (a saving); otherwise lower is better (a cost). `score` is lower-is-better either way.
   const score = (o: OptionId) => (onSale ? -savingOf(o) : totalOf(o));
@@ -160,21 +163,10 @@ export default function StudioPage() {
             ))}
           </div>
         </fieldset>
-        <fieldset>
-          <legend className="mb-1 text-[12px] text-muted">Who is investing</legend>
-          <div className="flex rounded-md border border-rule bg-sheet p-0.5 text-[13px]">
-            {(Object.keys(INVESTOR_PRESETS) as InvestorPreset[]).map((k) => (
-              <button
-                key={k}
-                onClick={() => setPreset(k)}
-                aria-pressed={preset === k}
-                className={`rounded-[4px] px-3 py-1.5 transition-colors ${preset === k ? "bg-ink font-semibold text-sheet" : "text-muted hover:text-ink"}`}
-              >
-                {INVESTOR_PRESETS[k][0].label}
-              </button>
-            ))}
-          </div>
-        </fieldset>
+        <div>
+          <p className="mb-1 text-[12px] text-muted">Who is investing</p>
+          <p className="rounded-md border border-rule bg-sheet px-3 py-[7px] text-[13px] font-semibold">{INVESTOR_PRESETS[preset][0].label}</p>
+        </div>
         {!panelOpen && (
           <button
             onClick={onExport}
@@ -185,6 +177,40 @@ export default function StudioPage() {
           </button>
         )}
       </div>
+      {(showRelief || showShare) && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px]">
+          {showRelief && (
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={assume.atedRelief}
+                onChange={(e) => setAssume({ ...assume, atedRelief: e.target.checked })}
+                className="size-4 accent-[#17262a]"
+              />
+              <span>
+                Properties are let out <span className="text-muted">(ATED relief: no yearly ATED, a return is still filed)</span>
+              </span>
+            </label>
+          )}
+          {showShare && (
+            <div className="flex items-center gap-2">
+              <span className="text-muted">Of the buyer&apos;s stamp duty saving, you get back</span>
+              <div className="flex rounded-md border border-rule bg-sheet p-0.5">
+                {[0, 0.25, 0.5, 0.75, 1].map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setAssume({ ...assume, saleShare: v })}
+                    aria-pressed={assume.saleShare === v}
+                    className={`rounded-[4px] px-2.5 py-1 tabular transition-colors ${assume.saleShare === v ? "bg-ink font-semibold text-sheet" : "text-muted hover:text-ink"}`}
+                  >
+                    {v * 100}%
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       {error && (
         <div className="mt-3">
           <Notice tone="error">{error}</Notice>
@@ -289,22 +315,23 @@ export default function StudioPage() {
               })()}
             {result && !onSale &&
               (() => {
-                const b = breakdown(result, tab, horizon, family);
-                const parts: [string, number, typeof b.rows.purchase][] = [
+                const b = breakdown(result, tab, horizon, family, assume);
+                const parts: [string, number, typeof b.rows.purchase, string?][] = [
                   ["On purchase", b.purchase, b.rows.purchase],
                   [`Yearly × ${b.years}`, b.yearly, b.rows.yearly],
                   [`10-year × ${b.decades}`, b.tenYear, b.rows.tenYear],
                   ["IHT on a death", b.death, b.rows.death],
+                  ["Back in the sale price", b.sale, b.rows.sale, saleNote(result, tab, assume)],
                 ];
                 return (
                   <>
                     {parts
-                      .filter(([, v]) => v > 0)
-                      .map(([label, v, r]) => (
+                      .filter(([, v]) => v !== 0)
+                      .map(([label, v, r, note]) => (
                         <div key={label}>
                           <dt className="whitespace-nowrap text-[12px] text-muted">{label}</dt>
                           <dd className="wide tabular text-[20px] font-bold">
-                            <CostMoney title={`Option ${tab}, ${label.toLowerCase()}`} rows={r} amount={v} />
+                            <CostMoney title={`Option ${tab}, ${label.toLowerCase()}`} rows={r} amount={v} note={note} />
                           </dd>
                         </div>
                       ))}
@@ -382,9 +409,15 @@ export default function StudioPage() {
               ) : (
                 <>
                   <h3 className="text-[13px] font-semibold">What each option costs over {HORIZON_LABEL[horizon].toLowerCase()}</h3>
-                  <div className="mt-2 h-44">{result && <TotalsChart result={result} horizon={horizon} family={family} />}</div>
-                  <div className="mt-3">{result && <TotalsTable result={result} horizon={horizon} family={family} best={soleBest} onPick={setTab} />}</div>
-                  <p className="mt-2 text-[11px] text-faint">{horizon === "25y" && family ? "Assumes one death in 25 years: without a trust the family pays 40% inheritance tax above the nil-rate band. " : ""}Sale not counted here: see On sale for what each option saves the next buyer.</p>
+                  <div className="mt-2 h-44">{result && <TotalsChart result={result} horizon={horizon} family={family} assume={assume} />}</div>
+                  <div className="mt-3">{result && <TotalsTable result={result} horizon={horizon} family={family} best={soleBest} onPick={setTab} assume={assume} />}</div>
+                  <p className="mt-2 text-[11px] text-faint">
+                    {horizon.startsWith("25y") && family ? "Assumes one death in 25 years: without a trust the family pays 40% inheritance tax above the nil-rate band. " : ""}
+                    {showRelief && assume.atedRelief ? "ATED relief assumed: properties let commercially. " : ""}
+                    {showShare
+                      ? `Sold after 25 years as a company: the next buyer saves stamp duty and you get ${assume.saleShare * 100}% of that back in the price. Today's prices; capital gains tax not counted.`
+                      : "Sale not counted here: see 25 years, then sell."}
+                  </p>
                 </>
               )}
             </section>
