@@ -29,6 +29,8 @@ export type SdltResResult = {
   tax: "SDLT_RES_COMPANY_17" | "SDLT_RES_HIGHER";
   amount: number;
   formula: string;
+  /** True when relief disapplied the 17% rate that would otherwise have applied. */
+  relieved17?: boolean;
 };
 
 /**
@@ -37,12 +39,14 @@ export type SdltResResult = {
  * @param dwellings number of dwellings in it (per-dwelling price = price / dwellings)
  * @param buyerIsCompany non-natural person buyer
  * @param buyerIsNonUk non-UK resident buyer (adds the 2% surcharge)
+ * @param rentalRelief property-rental-business relief claimed: the 17% rate is disapplied and higher rates apply
  */
-export function sdltRes(price: number, dwellings: number, buyerIsCompany: boolean, buyerIsNonUk = false): SdltResResult {
+export function sdltRes(price: number, dwellings: number, buyerIsCompany: boolean, buyerIsNonUk = false, rentalRelief = false): SdltResResult {
   const perDwelling = price / dwellings;
   const extra = buyerIsNonUk ? NON_UK_SURCHARGE_PCT : 0;
   const nonUkNote = buyerIsNonUk ? ` incl. ${NON_UK_SURCHARGE_PCT}% non-UK resident surcharge` : "";
-  if (buyerIsCompany && perDwelling > COMPANY_17_THRESHOLD) {
+  const would17 = buyerIsCompany && perDwelling > COMPANY_17_THRESHOLD;
+  if (would17 && !rentalRelief) {
     const pct = COMPANY_17_PCT + extra;
     const amount = Math.floor((price * pct) / 100);
     return {
@@ -56,6 +60,7 @@ export function sdltRes(price: number, dwellings: number, buyerIsCompany: boolea
   return {
     tax: "SDLT_RES_HIGHER",
     amount,
-    formula: `SDLT residential higher rates on £${fmt(price)} (standard bands +${HIGHER_RATES_SURCHARGE_PCT + extra} points${nonUkNote}): ${describeBands(bands)} = £${fmt(amount)}`,
+    relieved17: would17 || undefined,
+    formula: `SDLT residential higher rates on £${fmt(price)} (standard bands +${HIGHER_RATES_SURCHARGE_PCT + extra} points${nonUkNote}): ${describeBands(bands)} = £${fmt(amount)}${would17 ? " (17% rate disapplied: property-rental-business relief)" : ""}`,
   };
 }

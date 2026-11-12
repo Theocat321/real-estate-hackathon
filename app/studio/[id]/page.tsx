@@ -56,12 +56,12 @@ export default function StudioPage() {
     else setError("Packet not found in this session.");
   }, [id]);
 
-  const run = useCallback(async (p: Packet, investors: Investor[]) => {
+  const run = useCallback(async (p: Packet, investors: Investor[], rentalRelief: boolean) => {
     setLoading(true);
     setError(null);
     try {
       const { structures } = await buildStructures(p, investors);
-      const scenario = { packet: p, structures, investors };
+      const scenario = { packet: p, structures, investors, assumptions: { rental_relief: rentalRelief } };
       const result = await runScenario(scenario);
       setCliffs(null);
       findCliffs(scenario).then(setCliffs).catch(() => setCliffs([]));
@@ -76,11 +76,12 @@ export default function StudioPage() {
     }
   }, []);
 
+  const rentalRelief = assume.rentalRelief;
   const presetRef = useRef(preset);
   useEffect(() => {
     presetRef.current = preset;
-    if (packet) void run(packet, INVESTOR_PRESETS[preset]);
-  }, [packet, preset, run]);
+    if (packet) void run(packet, INVESTOR_PRESETS[preset], rentalRelief);
+  }, [packet, preset, rentalRelief, run]);
 
   async function onExport() {
     if (!packet || !structures || !result) return;
@@ -116,7 +117,7 @@ export default function StudioPage() {
   const family = isFamily(INVESTOR_PRESETS[preset]);
   const onSale = horizon === "sale";
   const totalOf = (o: OptionId) => (result ? breakdown(result, o, horizon, family, assume).total : Infinity);
-  const showRelief = !!result && paysAted(result) && horizon !== "purchase" && !onSale;
+  const showRelief = !!result && paysAted(result);
   const showShare = horizon === "25y_sell";
   const savingOf = (o: OptionId) => (result ? saleSaving(result, o).saving : 0);
   // On sale, higher is better (a saving); otherwise lower is better (a cost). `score` is lower-is-better either way.
@@ -193,12 +194,12 @@ export default function StudioPage() {
             <label className="flex cursor-pointer items-center gap-2">
               <input
                 type="checkbox"
-                checked={assume.atedRelief}
-                onChange={(e) => setAssume({ ...assume, atedRelief: e.target.checked })}
+                checked={assume.rentalRelief}
+                onChange={(e) => setAssume({ ...assume, rentalRelief: e.target.checked })}
                 className="size-4 accent-[#17262a]"
               />
               <span>
-                Properties are let out <span className="text-muted">(ATED relief: no yearly ATED, a return is still filed)</span>
+                Homes let to unconnected tenants <span className="text-muted">(rental-business relief on 17% SDLT and ATED)</span>
               </span>
             </label>
           )}
@@ -427,7 +428,7 @@ export default function StudioPage() {
                   <div className="mt-3">{result && <TotalsTable result={result} horizon={horizon} family={family} best={soleBest} onPick={setTab} assume={assume} options={shown} />}</div>
                   <p className="mt-2 text-[11px] text-faint">
                     {horizon.startsWith("25y") && family ? "Assumes one death in 25 years: without a trust the family pays 40% inheritance tax above the nil-rate band. " : ""}
-                    {showRelief && assume.atedRelief ? "ATED relief assumed: properties let commercially. " : ""}
+                    {showRelief && assume.rentalRelief ? "Rental-business relief assumed: homes let to unconnected tenants (17% SDLT disapplied, ATED nil). " : ""}
                     {showShare
                       ? `Sold after 25 years as a company: the next buyer saves stamp duty and you get ${assume.saleShare * 100}% of that back in the price. Today's prices; capital gains tax not counted.`
                       : "Sale not counted here: see 25 years, then sell."}

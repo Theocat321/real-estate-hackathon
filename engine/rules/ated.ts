@@ -24,7 +24,7 @@ export const ATED_FLAG =
   "ATED: property-rental-business relief can reduce the charge to nil, but an ATED return (relief declaration) is still required each year.";
 
 /** Annual ATED for `dwellings` dwellings each valued at `price / dwellings`. Zero if at or below £500k. */
-export function ated(price: number, dwellings: number): { amount: number; formula: string } {
+export function ated(price: number, dwellings: number, rentalRelief = false): { amount: number; formula: string } {
   const perDwelling = price / dwellings;
   if (perDwelling <= ATED_THRESHOLD) {
     return { amount: 0, formula: `£${fmt(perDwelling)} per dwelling is not over £${fmt(ATED_THRESHOLD)}: no ATED` };
@@ -32,6 +32,12 @@ export function ated(price: number, dwellings: number): { amount: number; formul
   const band = ATED_BANDS_2026_27.find((b) => perDwelling <= b.upTo)!;
   const amount = band.charge * dwellings;
   const per = dwellings > 1 ? ` x ${dwellings} dwellings` : "";
+  if (rentalRelief) {
+    return {
+      amount: 0,
+      formula: `£${fmt(perDwelling)} per dwelling falls in ${band.label} band: £${fmt(amount)} a year before relief; property-rental-business relief claimed on the yearly return = £0`,
+    };
+  }
   return {
     amount,
     formula: `£${fmt(perDwelling)} per dwelling falls in ${band.label} band: £${fmt(band.charge)} a year${per} = £${fmt(amount)} a year`,

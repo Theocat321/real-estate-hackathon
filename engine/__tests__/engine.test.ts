@@ -271,3 +271,37 @@ describe("contract 1.1.0", () => {
     expect(ScenarioInputSchema.safeParse({ ...base, assumptions: { rental_relief: "yes" } }).success).toBe(false);
   });
 });
+
+describe("rental-business relief", () => {
+  const ats = (r: ReturnType<typeof runEngine>) => r.rows.filter((x) => x.tax === "ATED");
+  it("£1.1m dwelling, company, relief on -> higher rates 108,750 not 17%", () => {
+    expect(sdltRes(1_100_000, 1, true, false, true)).toMatchObject({ tax: "SDLT_RES_HIGHER", amount: 108_750 });
+    const r = runEngine({ ...scenarioWith([resProperty("h", 1_100_000)]), assumptions: { rental_relief: true } });
+    const row = r.rows.find((x) => x.stage === "acquire")!;
+    expect(row.tax).toBe("SDLT_RES_HIGHER");
+    expect(row.amount_gbp).toBe(108_750);
+    expect(row.rule.citation_url).toBe("https://www.gov.uk/guidance/stamp-duty-land-tax-corporate-bodies");
+    expect(row.formula).toContain("17% rate disapplied: property-rental-business relief");
+  });
+  it("ATED row is £0 with relief on, 9,450 with relief off", () => {
+    const on = ats(runEngine({ ...scenarioWith([resProperty("h", 1_100_000)]), assumptions: { rental_relief: true } }));
+    const off = ats(runEngine(scenarioWith([resProperty("h", 1_100_000)])));
+    expect(on.length).toBeGreaterThan(0);
+    expect(on.every((x) => x.amount_gbp === 0)).toBe(true);
+    expect(on[0].formula).toContain("property-rental-business relief claimed on the yearly return = £0");
+    expect(off[0].amount_gbp).toBe(9_450);
+  });
+  it("relief off reproduces today's golden totals", () => {
+    expect(runEngine({ ...scenario, assumptions: { rental_relief: false } }).totals).toEqual(runEngine(scenario).totals);
+  });
+});
+
+describe("assumptions schema", () => {
+  const base = { packet: sample.packet, structures: sample.structures, investors: sample.investors };
+  it("rejects a non-boolean distribute_profits", () => {
+    expect(ScenarioInputSchema.safeParse({ ...base, assumptions: { distribute_profits: "yes" } }).success).toBe(false);
+  });
+  it("parses with assumptions omitted", () => {
+    expect(ScenarioInputSchema.safeParse(base).success).toBe(true);
+  });
+});

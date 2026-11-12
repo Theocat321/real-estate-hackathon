@@ -20,7 +20,7 @@ import { STAMP_DUTY_SHARES_FLAG, STAMP_DUTY_SHARES_RULE, stampDutyShares } from 
 import { STAMP_DUTY_UNITS_FLAG, STAMP_DUTY_UNITS_RULE, stampDutyUnits } from "./rules/stamp_duty_units";
 import { CORP_TAX_RULE, PENSION_EXEMPT_RULE, corpTax } from "./rules/corp_tax";
 import { PROFIT_SHARE_OF_RENT, rentFor } from "./rules/rent";
-import { ATED_FLAG, ATED_RULE, ated } from "./rules/ated";
+import { ATED_FLAG, ATED_RULE, ATED_THRESHOLD, ated } from "./rules/ated";
 import { IHT_ENTRY_RULE, ihtEntry } from "./rules/iht_entry";
 import { IHT_TEN_YEAR_RULE, ihtTenYear } from "./rules/iht_ten_year";
 import { IHT_DEATH_COMPARATOR_RULE, ihtDeathComparator } from "./rules/iht_death_comparator";
@@ -112,6 +112,7 @@ export function runEngine(input: ScenarioInput): EngineResult {
     const buyer = findBuyer(s);
     const company = isCompany(buyer);
     const nonUk = buyerIsNonUk(s, buyer);
+    const rentalRelief = input.assumptions?.rental_relief ?? false;
     const nodeFor = (p: Property) => s.nodes.find((n) => n.kind === "property" && n.property_id === p.id)?.id ?? buyer.id;
     const spv = s.nodes.find((n) => n.kind === "company") ?? buyer;
     const flag = (f: Omit<Flag, "option">) => flags.push({ option: opt, ...f });
@@ -160,7 +161,7 @@ export function runEngine(input: ScenarioInput): EngineResult {
       );
     } else {
       for (const p of resProps) {
-        const r = sdltRes(p.price, dwellingsOf(p), company, nonUk);
+        const r = sdltRes(p.price, dwellingsOf(p), company, nonUk, rentalRelief);
         row("acquire", r.tax, nodeFor(p), r.amount, `${p.name}, bought by ${buyer.label}: ${r.formula}`, [
           priceInput(p),
           { label: "Buyer", value: `${buyer.label} (${company ? "company" : "not a company"})`, source: structureSource(opt, `buyer node ${buyer.id}`) },
@@ -169,13 +170,15 @@ export function runEngine(input: ScenarioInput): EngineResult {
             value: nonUk ? "Non-UK (2% surcharge)" : "UK",
             source: { kind: "rule", file: "engine/index.ts#buyerIsNonUk", url: CITE.sdltNonUk, excerpt: "Non-UK buyer, or UK company controlled from outside the UK" },
           },
-        ], nonUk ? { ...SDLT_RES_RULE, citation_url: CITE.sdltNonUk } : SDLT_RES_RULE);
-        if (r.tax === "SDLT_RES_COMPANY_17") {
+        ], nonUk ? { ...SDLT_RES_RULE, citation_url: CITE.sdltNonUk } : r.relieved17 ? { ...SDLT_RES_RULE, citation_url: CITE.sdltCorporate } : SDLT_RES_RULE);
+        if (r.tax === "SDLT_RES_COMPANY_17" || r.relieved17) {
           flag({
             entity_id: nodeFor(p),
             rule_id: SDLT_RES_RULE.id,
             severity: "info",
-            message: `${p.name}: property-rental-business relief may disapply the 17% rate.`,
+            message: rentalRelief
+              ? `${p.name}: 17% rate disapplied on the assumption the homes are let to unconnected tenants; relief is withdrawn if that stops within 3 years.`
+              : `${p.name}: property-rental-business relief may disapply the 17% rate.`,
             citation_url: SDLT_RES_RULE.citation_url,
           });
         }
@@ -215,8 +218,8 @@ export function runEngine(input: ScenarioInput): EngineResult {
     if (company) {
       let anyAted = false;
       for (const p of priced.filter((p) => p.use === "residential")) {
-        const r = ated(p.price, dwellingsOf(p));
-        if (r.amount === 0) continue;
+        if (dwellingsOf(p) === 0 || p.price / dwellingsOf(p) <= ATED_THRESHOLD) continue;
+        const r = ated(p.price, dwellingsOf(p), rentalRelief);
         anyAted = true;
         row("hold", "ATED", nodeFor(p), r.amount, `${p.name}, held by ${buyer.label} (annual): ${r.formula}`, [
           priceInput(p),

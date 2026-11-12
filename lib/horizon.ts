@@ -21,12 +21,12 @@ export const HORIZONS: Horizon[] = ["purchase", "10y", "25y", "25y_sell", "sale"
 const YEARS: Record<Horizon, number> = { purchase: 0, "10y": 10, "25y": 25, "25y_sell": 25, sale: 0 };
 
 export interface Assumptions {
-  /** Properties let commercially: property-rental-business relief takes ATED to nil (a yearly return is still filed). */
-  atedRelief: boolean;
+  /** Homes let to unconnected tenants: sent to the engine as assumptions.rental_relief (17% SDLT disapplied, ATED nil). */
+  rentalRelief: boolean;
   /** Share (0–1) of the next buyer's stamp-duty saving the seller gets back in the price. */
   saleShare: number;
 }
-export const DEFAULT_ASSUMPTIONS: Assumptions = { atedRelief: true, saleShare: 0.5 };
+export const DEFAULT_ASSUMPTIONS: Assumptions = { rentalRelief: true, saleShare: 0.5 };
 
 export const isFamily = (investors: Investor[]) =>
   investors.some((i) => i.type === "family_office_uk" || i.type === "family_office_nonuk");
@@ -52,7 +52,7 @@ export function breakdown(result: EngineResult, o: OptionId, horizon: Horizon, f
   const decades = Math.floor(years / 10);
   const pick = (opt: OptionId, pred: (r: CostRow) => boolean) => result.rows.filter((r) => r.option === opt && pred(r));
   const purchase = pick(o, (r) => r.stage === "acquire");
-  const yearly = years > 0 ? pick(o, (r) => r.stage === "hold" && !(a.atedRelief && r.tax === "ATED")) : [];
+  const yearly = years > 0 ? pick(o, (r) => r.stage === "hold") : [];
   const tenYear = decades > 0 ? pick(o, (r) => r.stage === "ten_year") : [];
   // A death within the period: options without a trust are exposed if a family holds them.
   const death = years >= 25 && family && o !== "D" ? pick("D", (r) => r.tax === "IHT_DEATH_COMPARATOR") : [];
@@ -91,5 +91,5 @@ export function saleSaving(result: EngineResult, o: OptionId): SaleSaving {
   return { directSdlt, saleDuty, saving: Math.max(0, directSdlt - saleDuty), rows: { direct, sale } };
 }
 
-/** True if any option pays ATED, so the relief switch changes something. */
-export const paysAted = (result: EngineResult) => result.rows.some((r) => r.tax === "ATED" && r.amount_gbp > 0);
+/** True if any option has an ATED row (charged or relieved to nil), so the relief switch changes something. */
+export const paysAted = (result: EngineResult) => result.rows.some((r) => r.tax === "ATED");
