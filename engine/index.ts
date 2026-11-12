@@ -242,8 +242,10 @@ export function runEngine(input: ScenarioInput): EngineResult {
       if (hasResidential) dFlag("UK homes held via an offshore company are looked through for inheritance tax.");
     }
 
-    if (opt === "C") {
-      const fund = s.nodes.find((n) => n.kind === "fund") ?? spv;
+    const fundNode = s.nodes.find((n) => n.kind === "fund");
+    // JPUT elections only apply to a Jersey property unit trust; a UK RIF has its own regime.
+    if (opt === "C" && fundNode && (fundNode.fund_type === "JPUT" || (!fundNode.fund_type && fundNode.jurisdiction === "Jersey"))) {
+      const fund = fundNode;
       flag({
         entity_id: fund.id,
         rule_id: "jput_elections",

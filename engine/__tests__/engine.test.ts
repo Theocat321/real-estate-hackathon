@@ -106,6 +106,20 @@ describe("golden sample fixture", () => {
   });
 });
 
+describe("option C fund flags", () => {
+  it("JPUT election flag only for a JPUT, not a RIF", () => {
+    const withFund = (fund_type: "JPUT" | "RIF") => ({
+      ...scenario,
+      structures: scenario.structures.map((s) =>
+        s.option !== "C" ? s : { ...s, nodes: s.nodes.map((n) => (n.kind === "fund" ? { ...n, fund_type, jurisdiction: fund_type === "JPUT" ? ("Jersey" as const) : ("UK" as const) } : n)) },
+      ),
+    });
+    const has = (r: ReturnType<typeof runEngine>) => r.flags.some((f) => f.option === "C" && f.message.includes("transparency election"));
+    expect(has(runEngine(withFund("JPUT")))).toBe(true);
+    expect(has(runEngine(withFund("RIF")))).toBe(false);
+  });
+});
+
 describe("residential rules", () => {
   it("£1,100,000 dwelling bought by a company -> SDLT_RES_COMPANY_17 = 187000", () => {
     expect(sdltRes(1_100_000, 1, true)).toMatchObject({ tax: "SDLT_RES_COMPANY_17", amount: golden.residential_checks.company_buys_1100000_dwelling_SDLT_RES_COMPANY_17 });

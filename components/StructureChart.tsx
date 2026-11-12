@@ -44,7 +44,8 @@ function StructNodeView({ data }: NodeProps<Node<StructNodeData>>) {
         {node.jurisdiction && <span className="shrink-0 text-[10px] opacity-60">{node.jurisdiction}</span>}
       </div>
       {byTax.size > 0 && (
-        <div className="nodrag nopan mt-1 flex flex-wrap gap-1">
+        // React Flow sets pointer-events:none on non-selectable nodes; re-enable it so £ badges open the SourceDrawer.
+        <div className="nodrag nopan pointer-events-auto mt-1 flex flex-wrap gap-1" style={{ pointerEvents: "all" }}>
           {[...byTax.entries()].map(([label, rs]) => (
             <span key={label} className="tabular rounded-[2px] bg-sheet px-1 py-px text-[11px] text-ink ring-1 ring-rule">
               {label} <CostMoney title={`Option ${option} · ${label} · ${node.label}`} rows={rs} />
