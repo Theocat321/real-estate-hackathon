@@ -408,16 +408,20 @@ function Summary({ packet, structures, result, stages, best, investor }: { packe
 const COLS = { lot: 26, addr: 0, use: 62, tenure: 52, price: 72, rent: 64, yld: 42 };
 
 function Schedule({ packet }: { packet: Packet }) {
+  // Drop columns no lot has data for, so the table isn't a wall of dashes.
+  const hasTenure = packet.items.some((p) => p.tenure !== "unknown");
+  const hasRent = packet.items.some((p) => p.rent_pa_gbp);
+  const hasYield = packet.items.some((p) => p.yield_pct);
   const head = (
     <View style={{ flexDirection: "row", backgroundColor: C.ink, paddingVertical: 6, paddingHorizontal: 6 }} fixed>
       {[
         ["Lot", COLS.lot, false],
         ["Property", 0, false],
         ["Use", COLS.use, false],
-        ["Tenure", COLS.tenure, false],
+        ...(hasTenure ? [["Tenure", COLS.tenure, false]] : []),
         ["Price", COLS.price, true],
-        ["Rent p.a.", COLS.rent, true],
-        ["Yield", COLS.yld, true],
+        ...(hasRent ? [["Rent p.a.", COLS.rent, true]] : []),
+        ...(hasYield ? [["Yield", COLS.yld, true]] : []),
       ].map(([l, w, r]) => (
         <Text key={l as string} style={[s.th, { color: C.sheet }, w ? { width: w as number } : { flex: 1 }, r ? s.num : {}]}>
           {l as string}
@@ -442,15 +446,15 @@ function Schedule({ packet }: { packet: Packet }) {
           </View>
           <View style={{ width: COLS.use }}>
             <Text>{USE_LABEL[p.use]}</Text>
-            <Text style={{ color: C.muted, fontSize: 7 }}>{clip(p.property_type, 16)}</Text>
+            {p.property_type.toLowerCase() !== p.use && <Text style={{ color: C.muted, fontSize: 7, textTransform: "capitalize" }}>{clip(p.property_type, 16)}</Text>}
           </View>
-          <Text style={{ width: COLS.tenure, textTransform: "capitalize" }}>{p.tenure === "unknown" ? "—" : p.tenure}</Text>
+          {hasTenure && <Text style={{ width: COLS.tenure, textTransform: "capitalize" }}>{p.tenure === "unknown" ? "—" : p.tenure}</Text>}
           <View style={{ width: COLS.price }}>
             <Text style={[s.num, { fontFamily: BOLD, fontWeight: "bold" }]}>{gbp(p.price_gbp?.value)}</Text>
             {p.price_kind && <Text style={[s.num, { color: C.muted, fontSize: 6.8, textTransform: "capitalize" }]}>{p.price_kind}</Text>}
           </View>
-          <Text style={[s.num, { width: COLS.rent }]}>{gbp(p.rent_pa_gbp?.value)}</Text>
-          <Text style={[s.num, { width: COLS.yld }]}>{pct(p.yield_pct?.value)}</Text>
+          {hasRent && <Text style={[s.num, { width: COLS.rent }]}>{gbp(p.rent_pa_gbp?.value)}</Text>}
+          {hasYield && <Text style={[s.num, { width: COLS.yld }]}>{pct(p.yield_pct?.value)}</Text>}
         </View>
       ))}
       <View style={{ flexDirection: "row", paddingVertical: 8, paddingHorizontal: 6, borderTopWidth: 1.2, borderTopColor: C.ink }} wrap={false}>
@@ -458,10 +462,10 @@ function Schedule({ packet }: { packet: Packet }) {
         <Text style={{ flex: 1, fontFamily: BOLD, fontWeight: "bold" }}>
           Total · {packet.items.length} lots{packet.totals.dwellings ? ` · ${packet.totals.dwellings} dwellings` : ""}
         </Text>
-        <Text style={{ width: COLS.use + COLS.tenure }} />
+        <Text style={{ width: COLS.use + (hasTenure ? COLS.tenure : 0) }} />
         <Text style={[s.num, { width: COLS.price, fontFamily: BOLD, fontWeight: "bold" }]}>{gbp(packet.totals.price_gbp)}</Text>
-        <Text style={[s.num, { width: COLS.rent, fontFamily: BOLD, fontWeight: "bold" }]}>{packet.totals.rent_pa_gbp ? gbp(packet.totals.rent_pa_gbp) : "—"}</Text>
-        <Text style={[s.num, { width: COLS.yld, fontFamily: BOLD, fontWeight: "bold" }]}>{pct(packet.totals.blended_yield_pct)}</Text>
+        {hasRent && <Text style={[s.num, { width: COLS.rent, fontFamily: BOLD, fontWeight: "bold" }]}>{packet.totals.rent_pa_gbp ? gbp(packet.totals.rent_pa_gbp) : "—"}</Text>}
+        {hasYield && <Text style={[s.num, { width: COLS.yld, fontFamily: BOLD, fontWeight: "bold" }]}>{pct(packet.totals.blended_yield_pct)}</Text>}
       </View>
       <Text style={{ fontSize: 7, color: C.muted, marginTop: 6 }}>
         Prices are asking, guide or achieved as marked; every figure traces to a source in the appendix.
