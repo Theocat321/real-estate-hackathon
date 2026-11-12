@@ -7,7 +7,8 @@
  * Every £ figure in a reply is quoted from EngineResult / Packet. Nothing is computed here.
  */
 import { z } from "zod";
-import type { EngineResult, Investor, MatchRequest, OptionId, Packet, Property, Stage, Structure } from "@/contracts";
+import type { Assumptions, EngineResult, Investor, MatchRequest, OptionId, Packet, Property, Stage, Structure } from "@/contracts";
+import { STUDIO_ASSUMPTIONS } from "@/lib/horizon";
 import { grokJson, type Transport } from "../grok";
 
 export type Command = { kind: "build"; target: string } | { kind: "explain"; option: OptionId } | { kind: "help" };
@@ -37,7 +38,7 @@ export interface StudioApi {
   properties(q: string): Promise<Property[]>;
   match(req: MatchRequest): Promise<Packet>;
   structures(packet: Packet, investors: Investor[]): Promise<Structure[]>;
-  engine(packet: Packet, structures: Structure[], investors: Investor[]): Promise<EngineResult>;
+  engine(packet: Packet, structures: Structure[], investors: Investor[], assumptions: Assumptions): Promise<EngineResult>;
 }
 
 /** HTTP client against a running app (local or Vercel). */
@@ -54,7 +55,7 @@ export function httpApi(baseUrl: string): StudioApi {
     properties: (q) => call(`/api/properties?q=${encodeURIComponent(q)}&limit=5`),
     match: (req) => call("/api/match", post(req)),
     structures: async (packet, investors) => (await call<{ structures: Structure[] }>("/api/structures", post({ packet, investors }))).structures,
-    engine: (packet, structures, investors) => call("/api/engine", post({ packet, structures, investors })),
+    engine: (packet, structures, investors, assumptions) => call("/api/engine", post({ packet, structures, investors, assumptions })),
   };
 }
 
@@ -81,7 +82,8 @@ export async function buildPacket(target: string, api: StudioApi, opts: { appUrl
   const investors = opts.investors ?? DEFAULT_INVESTORS;
   const packet = await api.match({ seed_id: seedId, n: opts.n ?? 5 });
   const structures = await api.structures(packet, investors);
-  const result = await api.engine(packet, structures, investors);
+  // Same assumptions as the Studio, so the bot and the Studio quote the same figures.
+  const result = await api.engine(packet, structures, investors, STUDIO_ASSUMPTIONS);
   return { packet, structures, result, investors, app_url: `${opts.appUrl.replace(/\/$/, "")}/studio/${encodeURIComponent(packet.id)}` };
 }
 

@@ -2,8 +2,9 @@
  * "Set up this structure": the steps, deadlines and roles needed to put an option in place,
  * plus a plain-text brief to send to advisers. Deterministic; every step cites its gov.uk page.
  */
-import type { EngineResult, Flag, Investor, OptionId, Packet, Stage, Structure } from "@/contracts";
+import type { Assumptions as EngineAssumptions, EngineResult, Flag, Investor, OptionId, Packet, Stage, Structure } from "@/contracts";
 import { gbp } from "@/lib/api";
+import { assumptionsSentence } from "@/lib/horizon";
 
 export type RoleId =
   | "conveyancer"
@@ -162,11 +163,15 @@ export function setupSteps(option: OptionId, structure: Structure | undefined, r
       source: { label: "Corporation Tax", url: GOV.corpTax },
     });
   }
-  if (ated > 0) {
+  // With rental-business relief the ATED rows are £0, but a relief declaration return is still due.
+  if (rows.some((r) => r.tax === "ATED")) {
     steps.push({
       id: "ated",
       title: "File the ATED return",
-      detail: `Homes over £500,000 held by a company are in ATED. The engine estimates ${gbp(ated)} a year before any relief; a property-rental-business relief claim still needs a return.`,
+      detail:
+        ated > 0
+          ? `Homes over £500,000 held by a company are in ATED. The engine estimates ${gbp(ated)} a year; a property-rental-business relief claim would reduce this but still needs a return.`
+          : "Homes over £500,000 held by a company are in ATED. With property-rental-business relief the charge is £0, but a relief declaration return is still needed each year.",
       roles: ["property_tax", "accountant"],
       deadline: "By 30 April each year",
       source: { label: "ATED returns", url: GOV.atedReturn },
@@ -219,8 +224,10 @@ export function adviserBrief(args: {
   result: EngineResult | null;
   investors: Investor[];
   steps: SetupStep[];
+  /** The assumptions the engine ran with; stated in the brief so advisers read the figures on the same basis. */
+  assumptions: EngineAssumptions;
 }): string {
-  const { option, packet, structure, result, investors, steps } = args;
+  const { option, packet, structure, result, investors, steps, assumptions } = args;
   const totals = result?.totals[option] ?? {};
   const flags: Flag[] = result?.flags.filter((f) => f.option === option) ?? [];
   const chain = structure?.nodes.filter((n) => n.kind !== "property").map((n) => n.label).join(" → ");
@@ -239,6 +246,7 @@ export function adviserBrief(args: {
     "",
     "Our estimated tax costs (please confirm):",
     ...(Object.entries(totals) as [Stage, number][]).map(([s, v]) => `- ${STAGE_WORDS[s]}: ${gbp(v)}`),
+    assumptionsSentence(assumptions),
     "",
     "Steps we expect:",
     ...steps.map((s, i) => `${i + 1}. ${s.title}${s.deadline ? ` (${s.deadline.toLowerCase()})` : ""}`),

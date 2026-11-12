@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CostRow, EngineResult, OptionId } from "@/contracts";
-import { breakdown, saleSaving } from "../horizon";
+import { STUDIO_ASSUMPTIONS, assumptionsFromQuery, assumptionsQuery, assumptionsSentence, breakdown, saleSaving } from "../horizon";
 
 const row = (option: OptionId, stage: CostRow["stage"], tax: CostRow["tax"], amount_gbp: number): CostRow =>
   ({ option, stage, tax, amount_gbp, entity_id: "x", formula: "", inputs: [], rule: { id: "r", citation_url: "", as_of: "" } }) as CostRow;
@@ -49,5 +49,28 @@ describe("breakdown", () => {
   });
   it("gets nothing back if the seller keeps none of the saving", () => {
     expect(breakdown(result, "B", "25y_sell", false, { rentalRelief: true, distributeProfits: true, saleShare: 0 }).sale).toBe(0);
+  });
+});
+
+describe("shared engine assumptions", () => {
+  it("one default for every engine caller: rental relief on, profits paid out", () => {
+    expect(STUDIO_ASSUMPTIONS).toEqual({ rental_relief: true, distribute_profits: true });
+  });
+  it("round-trips through the Setup link query", () => {
+    const off = { rental_relief: false, distribute_profits: false };
+    expect(assumptionsQuery(STUDIO_ASSUMPTIONS)).toBe("relief=1&dividends=1");
+    expect(assumptionsFromQuery(new URLSearchParams(assumptionsQuery(off)))).toEqual(off);
+    expect(assumptionsFromQuery(new URLSearchParams("relief=0"))).toEqual({ rental_relief: false, distribute_profits: true });
+  });
+  it("defaults to the Studio assumptions when the query has none", () => {
+    expect(assumptionsFromQuery(new URLSearchParams(""))).toEqual(STUDIO_ASSUMPTIONS);
+  });
+  it("states the assumptions in one plain sentence", () => {
+    expect(assumptionsSentence(STUDIO_ASSUMPTIONS)).toBe(
+      "Assumes homes are let to unconnected tenants (rental-business relief) and profits are paid out each year.",
+    );
+    expect(assumptionsSentence({ rental_relief: false, distribute_profits: false })).toBe(
+      "Assumes no rental-business relief is claimed and profits are kept in the company.",
+    );
   });
 });

@@ -11,7 +11,7 @@ import type { OptimiseResult } from "@/engine/optimise";
 import { CostMoney } from "@/components/SourceDrawer";
 import { StructureChart } from "@/components/StructureChart";
 import { FlagList, OptionDTimeline, SaleChart, SaleTable, TotalsChart, TotalsTable, saleNote } from "@/components/StudioPanels";
-import { DEFAULT_ASSUMPTIONS, HORIZONS, HORIZON_LABEL, breakdown, isFamily, paysAted, saleSaving, type Assumptions, type Horizon } from "@/lib/horizon";
+import { DEFAULT_ASSUMPTIONS, HORIZONS, assumptionsQuery, toEngineAssumptions, HORIZON_LABEL, breakdown, isFamily, paysAted, saleSaving, type Assumptions, type Horizon } from "@/lib/horizon";
 import {
   INVESTOR_PRESETS,
   OPTIONS,
@@ -378,7 +378,7 @@ export default function StudioPage() {
           </dl>
           <div className="min-w-0 space-y-2">{result && <FlagList flags={result.flags} option={tab} />}</div>
           <Link
-            href={`/setup/${encodeURIComponent(packet.id)}/${tab}?investor=${preset}`}
+            href={`/setup/${encodeURIComponent(packet.id)}/${tab}?investor=${preset}&${assumptionsQuery(toEngineAssumptions(assume))}`}
             className={`whitespace-nowrap rounded-md px-5 py-3 text-center text-[14px] font-semibold transition-colors ${
               tab === soleBest ? "bg-edge text-sheet hover:bg-edge/90" : "bg-ink text-sheet hover:bg-ink-soft"
             }`}

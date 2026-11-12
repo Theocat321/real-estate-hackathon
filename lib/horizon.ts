@@ -7,7 +7,7 @@
  * "On sale" is a separate view (see `saleSaving`): what each option saves when the packet is sold.
  * "25 years, then sell" nets the part of that saving the seller gets back in the price off the 25-year cost.
  */
-import type { CostRow, EngineResult, Investor, OptionId } from "@/contracts";
+import type { Assumptions as EngineAssumptions, CostRow, EngineResult, Investor, OptionId } from "@/contracts";
 
 export type Horizon = "purchase" | "10y" | "25y" | "25y_sell" | "sale";
 export const HORIZON_LABEL: Record<Horizon, string> = {
@@ -29,6 +29,31 @@ export interface Assumptions {
   saleShare: number;
 }
 export const DEFAULT_ASSUMPTIONS: Assumptions = { rentalRelief: true, distributeProfits: true, saleShare: 0.5 };
+
+/** The Studio toggles as the engine's `assumptions` input. */
+export const toEngineAssumptions = (a: Pick<Assumptions, "rentalRelief" | "distributeProfits">): Required<EngineAssumptions> => ({
+  rental_relief: a.rentalRelief,
+  distribute_profits: a.distributeProfits,
+});
+/** What every engine caller (Studio, Setup, adviser brief, bot) assumes unless the user changes it. The API itself treats absent as false. */
+export const STUDIO_ASSUMPTIONS: Required<EngineAssumptions> = toEngineAssumptions(DEFAULT_ASSUMPTIONS);
+
+/** URL query carrying the assumptions from the Studio to the Setup page, e.g. "relief=1&dividends=1". */
+export const assumptionsQuery = (a: EngineAssumptions) => `relief=${a.rental_relief ? 1 : 0}&dividends=${a.distribute_profits ? 1 : 0}`;
+/** Reads `assumptionsQuery` back; a missing key falls back to STUDIO_ASSUMPTIONS. */
+export function assumptionsFromQuery(q: { get(key: string): string | null }): Required<EngineAssumptions> {
+  const flag = (key: string, fallback: boolean) => {
+    const v = q.get(key);
+    return v === null ? fallback : v === "1";
+  };
+  return { rental_relief: flag("relief", STUDIO_ASSUMPTIONS.rental_relief), distribute_profits: flag("dividends", STUDIO_ASSUMPTIONS.distribute_profits) };
+}
+/** The active assumptions in one plain sentence. */
+export function assumptionsSentence(a: EngineAssumptions): string {
+  const relief = a.rental_relief ? "homes are let to unconnected tenants (rental-business relief)" : "no rental-business relief is claimed";
+  const profits = a.distribute_profits ? "profits are paid out each year" : "profits are kept in the company";
+  return `Assumes ${relief} and ${profits}.`;
+}
 
 export const isFamily = (investors: Investor[]) =>
   investors.some((i) => i.type === "family_office_uk" || i.type === "family_office_nonuk");

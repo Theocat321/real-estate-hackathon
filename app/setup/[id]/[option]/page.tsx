@@ -7,6 +7,7 @@ import type { EngineResult, OptionId, Packet, Structure } from "@/contracts";
 import { CostMoney } from "@/components/SourceDrawer";
 import { Notice } from "@/components/ui";
 import { INVESTOR_PRESETS, OPTIONS, buildStructures, gbp, loadPacket, runScenario, type InvestorPreset } from "@/lib/api";
+import { assumptionsFromQuery } from "@/lib/horizon";
 import { ROLE_LABEL, adviserBrief, rolesFor, setupSteps, type RoleId } from "@/lib/setup";
 import { DIRECTORY } from "@/lib/structurers";
 
@@ -24,6 +25,10 @@ function Setup() {
   const option = (OPTIONS.includes(rawOption as OptionId) ? rawOption : "B") as OptionId;
   const preset = (search.get("investor") as InvestorPreset) in INVESTOR_PRESETS ? (search.get("investor") as InvestorPreset) : "uk_pension";
   const investors = INVESTOR_PRESETS[preset];
+  // The Studio's toggles travel in the link (?relief=1&dividends=1); absent means the Studio defaults.
+  const relief = search.get("relief");
+  const dividends = search.get("dividends");
+  const assumptions = useMemo(() => assumptionsFromQuery({ get: (k) => (k === "relief" ? relief : k === "dividends" ? dividends : null) }), [relief, dividends]);
 
   const [packet, setPacket] = useState<Packet | null>(null);
   const [structure, setStructure] = useState<Structure | undefined>();
@@ -42,20 +47,20 @@ function Setup() {
       try {
         const { structures } = await buildStructures(p, investors);
         setStructure(structures.find((s) => s.option === option));
-        setResult(await runScenario({ packet: p, structures, investors }));
+        setResult(await runScenario({ packet: p, structures, investors, assumptions }));
       } catch (e) {
         setError((e as Error).message);
       }
     })();
     // investors derive from preset
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, option, preset]);
+  }, [id, option, preset, assumptions]);
 
   const steps = useMemo(() => setupSteps(option, structure, result), [option, structure, result]);
   const roles = rolesFor(option);
   const brief = useMemo(
-    () => (packet ? adviserBrief({ option, packet, structure, result, investors, steps }) : ""),
-    [option, packet, structure, result, investors, steps],
+    () => (packet ? adviserBrief({ option, packet, structure, result, investors, steps, assumptions }) : ""),
+    [option, packet, structure, result, investors, steps, assumptions],
   );
 
   if (error === "missing")

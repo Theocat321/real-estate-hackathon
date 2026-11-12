@@ -5,6 +5,7 @@ import path from "node:path";
 import sample from "../../../fixtures/sample.json";
 import type { Packet, Structure } from "@/contracts";
 import { runEngine } from "@/engine";
+import { STUDIO_ASSUMPTIONS } from "@/lib/horizon";
 import {
   allowedAmounts, buildPacket, explainOption, formatBuildReply, parseCommand, poundsIn, quotesOnly,
   templateExplanation, type StudioApi,
@@ -13,12 +14,16 @@ import {
 const packet = sample.packet as Packet;
 const structures = sample.structures as Structure[];
 
-function fakeApi(calls: string[] = []): StudioApi {
+function fakeApi(calls: string[] = [], seen: { assumptions?: unknown } = {}): StudioApi {
   return {
     properties: async (q) => { calls.push(`properties:${q}`); return [packet.items[0]]; },
     match: async (req) => { calls.push(`match:${req.seed_id}`); return packet; },
     structures: async () => { calls.push("structures"); return structures; },
-    engine: async (p, s, investors) => { calls.push("engine"); return runEngine({ packet: p, structures: s, investors }); },
+    engine: async (p, s, investors, assumptions) => {
+      calls.push("engine");
+      seen.assumptions = assumptions;
+      return runEngine({ packet: p, structures: s, investors, assumptions });
+    },
   };
 }
 
@@ -40,6 +45,12 @@ describe("build packet", () => {
     const b: string[] = [];
     await buildPacket("Wireless House", fakeApi(b), { appUrl: "http://x" });
     expect(b[0]).toBe("properties:Wireless House");
+  });
+
+  it("runs the engine on the same assumptions as the Studio", async () => {
+    const seen: { assumptions?: unknown } = {};
+    await buildPacket("allsop-6392cf9c", fakeApi([], seen), { appUrl: "http://x" });
+    expect(seen.assumptions).toEqual(STUDIO_ASSUMPTIONS);
   });
 
   it("reply quotes golden totals and links the studio", async () => {
