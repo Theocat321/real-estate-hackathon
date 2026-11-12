@@ -79,7 +79,7 @@ function Setup() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-[1400px] space-y-8">
       <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
         <div className="min-w-0">
           <Link href={`/studio/${encodeURIComponent(packet.id)}`} className="text-[13px] text-muted hover:text-ink">

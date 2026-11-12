@@ -9,7 +9,7 @@ import { CliffPanel } from "@/components/CliffPanel";
 import type { Cliff } from "@/engine/cliffs";
 import { CostMoney } from "@/components/SourceDrawer";
 import { StructureChart } from "@/components/StructureChart";
-import { FlagList, OptionDTimeline, TotalsChart, TotalsTable } from "@/components/StudioPanels";
+import { FlagList, OptionDTimeline, STAGE_LABEL, TotalsChart, TotalsTable } from "@/components/StudioPanels";
 import {
   INVESTOR_PRESETS,
   OPTIONS,
@@ -32,6 +32,8 @@ export default function StudioPage() {
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [cliffs, setCliffs] = useState<Cliff[] | null>(null);
+  const [tab, setTab] = useState<OptionId>("A");
+  const [panelOpen, setPanelOpen] = useState(true);
   const [changeNote, setChangeNote] = useState<string | null>(null);
   const prev = useRef<{ preset: InvestorPreset; structures: Structure[]; result: EngineResult } | null>(null);
 
@@ -101,9 +103,23 @@ export default function StudioPage() {
   const upfront = (o: OptionId) => result?.totals[o]?.acquire ?? Infinity;
   const best = result ? OPTIONS.reduce((a, b) => (upfront(b) < upfront(a) ? b : a)) : null;
   const tied = best ? OPTIONS.filter((o) => upfront(o) === upfront(best)) : [];
+  const soleBest = tied.length === 1 ? best : null;
+  const s = structures?.find((x) => x.option === tab);
+  const rows = result?.rows.filter((r) => r.option === tab) ?? [];
+
+  function onTabKey(e: React.KeyboardEvent) {
+    const i = OPTIONS.indexOf(tab);
+    const next = e.key === "ArrowRight" ? OPTIONS[(i + 1) % 4] : e.key === "ArrowLeft" ? OPTIONS[(i + 3) % 4] : null;
+    if (next) {
+      e.preventDefault();
+      setTab(next);
+      document.getElementById(`tab-${next}`)?.focus();
+    }
+  }
 
   return (
-    <div className="flex flex-col gap-5 lg:h-[calc(100vh-9.5rem)] lg:min-h-[720px]">
+    <div className={`relative -mx-6 -my-8 px-6 py-4 transition-[padding] ${panelOpen ? "lg:pr-[376px] xl:pr-[412px]" : ""}`}>
+      {/* Header row */}
       <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
         <div className="min-w-0">
           <Link href={`/packet/${encodeURIComponent(packet.id)}`} className="text-[13px] text-muted hover:text-ink">
@@ -129,81 +145,151 @@ export default function StudioPage() {
             ))}
           </div>
         </fieldset>
-        <button
-          onClick={onExport}
-          disabled={!result || exporting}
-          className="rounded-md border border-ink bg-sheet px-4 py-2 text-[13px] font-semibold transition-colors hover:bg-ink hover:text-sheet disabled:opacity-40"
-        >
-          {exporting ? "Preparing PDF…" : "Download PDF"}
-        </button>
+        {!panelOpen && (
+          <button
+            onClick={onExport}
+            disabled={!result || exporting}
+            className="rounded-md border border-ink bg-sheet px-4 py-2 text-[13px] font-semibold transition-colors hover:bg-ink hover:text-sheet disabled:opacity-40"
+          >
+            {exporting ? "Preparing PDF…" : "Download PDF"}
+          </button>
+        )}
       </div>
-      {error && <Notice tone="error">{error}</Notice>}
+      {error && (
+        <div className="mt-3">
+          <Notice tone="error">{error}</Notice>
+        </div>
+      )}
       {changeNote && !loading && (
-        <p aria-live="polite" className="-mt-2 rounded-md border-l-[3px] border-ink bg-sheet px-3.5 py-2 text-[13px] text-ink-soft">
+        <p aria-live="polite" className="mt-3 rounded-md border-l-[3px] border-ink bg-sheet px-3.5 py-2 text-[13px] text-ink-soft">
           {changeNote}
         </p>
       )}
 
-      <div className="grid min-h-0 flex-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className={`grid min-h-0 gap-4 md:grid-cols-2 md:grid-rows-2 transition-opacity ${loading ? "opacity-50" : ""}`} aria-busy={loading}>
-          {OPTIONS.map((o) => {
-            const s = structures?.find((x) => x.option === o);
-            const rows = result?.rows.filter((r) => r.option === o && r.stage !== "death") ?? [];
-            const isBest = tied.length === 1 && o === best;
-            return (
-              <section key={o} className={`flex min-h-[360px] flex-col overflow-hidden rounded-md bg-sheet md:min-h-0 ${isBest ? "edged" : "border border-rule"}`}>
-                <header className="flex items-start gap-3 px-4 pb-2 pt-3">
-                  <span className={`wide grid size-8 shrink-0 place-items-center rounded-[3px] text-[16px] font-extrabold ${isBest ? "bg-edge text-sheet" : "bg-ink text-sheet"}`}>
-                    {o}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h2 className="truncate text-[15px] font-semibold leading-tight">{s?.name ?? "Drawing structure…"}</h2>
-                    {isBest && <p className="text-[12px] font-medium text-edge">Lowest cost on purchase</p>}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[11px] text-muted">On purchase</p>
-                    <p className="text-[16px] font-bold">
-                      <CostMoney title={`Option ${o}, on purchase`} rows={rows.filter((r) => r.stage === "acquire")} amount={result?.totals[o]?.acquire ?? 0} />
-                    </p>
-                  </div>
-                </header>
-                <div className="min-h-0 flex-1 border-y border-rule-soft">{s && result && <StructureChart structure={s} rows={result.rows} />}</div>
-                <div className="max-h-28 space-y-2 overflow-y-auto px-4 py-2.5">
-                  <div className="flex items-start gap-3">
-                    {s?.rationale && <p className="flex-1 text-[12px] leading-snug text-ink-soft">{s.rationale}</p>}
-                    <Link
-                      href={`/setup/${encodeURIComponent(packet.id)}/${o}?investor=${preset}`}
-                      className={`shrink-0 rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                        isBest ? "bg-edge text-sheet hover:bg-edge/90" : "border border-ink hover:bg-ink hover:text-sheet"
-                      }`}
-                    >
-                      Set up {o}
-                    </Link>
-                  </div>
-                  {result && <FlagList flags={result.flags} option={o} />}
-                </div>
-              </section>
-            );
-          })}
-        </div>
-
-        <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto">
-          <section className="rounded-md border border-rule bg-sheet p-4">
-            <h2 className="text-[14px] font-semibold">What each option costs, and when</h2>
-            <div className="mt-3 h-52">{result && <TotalsChart result={result} />}</div>
-            <div className="mt-3">{result && <TotalsTable result={result} best={tied.length === 1 ? best : null} />}</div>
-            <p className="mt-2 text-[11px] text-faint">*Inheritance tax if the family held the lots personally. Shown for comparison with D.</p>
-          </section>
-          <CliffPanel cliffs={cliffs} loading={loading || (!!result && !cliffs)} />
-          {result && (
-            <section className="rounded-md bg-ink p-4 text-sheet [&_button]:border-sheet/30 [&_button:hover]:bg-sheet/10 [&_button:hover]:text-sheet">
-              <h2 className="mb-2 text-[12px] font-medium opacity-70">Option D, family trust</h2>
-              <OptionDTimelineDark result={result} />
-            </section>
-          )}
-          <p className="px-1 text-[12px] leading-snug text-muted">Select any £ figure to see its formula, inputs, source rows and the rule it applied.</p>
-        </aside>
+      {/* Option tabs: each one is also the at-a-glance comparison */}
+      <div role="tablist" aria-label="Ownership options" onKeyDown={onTabKey} className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
+        {OPTIONS.map((o) => {
+          const st = structures?.find((x) => x.option === o);
+          const cost = result?.totals[o]?.acquire;
+          const delta = result && best && cost != null ? cost - (result.totals[best]?.acquire ?? 0) : null;
+          const selected = o === tab;
+          const isBest = o === soleBest;
+          return (
+            <button
+              key={o}
+              id={`tab-${o}`}
+              role="tab"
+              aria-selected={selected}
+              aria-controls="option-panel"
+              tabIndex={selected ? 0 : -1}
+              onClick={() => setTab(o)}
+              className={`group relative flex items-start gap-2.5 rounded-md px-3 py-2.5 text-left transition-colors ${
+                selected ? "bg-ink text-sheet" : `bg-sheet hover:bg-sage-soft ${isBest ? "edged" : "border border-rule"}`
+              }`}
+            >
+              <span
+                className={`wide grid size-8 shrink-0 place-items-center rounded-[3px] text-[16px] font-extrabold ${
+                  isBest ? "bg-edge text-sheet" : selected ? "bg-sheet text-ink" : "bg-ink text-sheet"
+                }`}
+              >
+                {o}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="line-clamp-2 block text-[13px] font-semibold leading-tight">{st?.name ?? "…"}</span>
+                <span className="wide tabular mt-1 block text-[18px] font-bold leading-none">{cost == null ? "…" : gbp(cost)}</span>
+                <span className={`mt-1 block text-[11px] leading-tight ${selected ? "text-sheet/70" : isBest ? "font-medium text-edge" : "text-muted"}`}>
+                  {isBest ? "Lowest on purchase" : delta == null ? "on purchase" : delta === 0 ? "Joint lowest" : `+${gbp(delta)} vs lowest`}
+                </span>
+              </span>
+            </button>
+          );
+        })}
       </div>
+
+      {/* Selected option */}
+      <section
+        id="option-panel"
+        role="tabpanel"
+        aria-labelledby={`tab-${tab}`}
+        className={`mt-3 overflow-hidden rounded-md border border-rule bg-sheet transition-opacity ${loading ? "opacity-50" : ""}`}
+        aria-busy={loading}
+      >
+        <div className="h-[max(340px,calc(100vh-25rem))]">{s && result ? <StructureChart structure={s} rows={result.rows} large /> : <div className="survey-grid h-full" />}</div>
+        <div className="grid gap-6 border-t border-rule px-5 py-4 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-start">
+          <dl className="flex gap-6">
+            {(["acquire", "hold", "exit", "ten_year"] as const).map((stage) => {
+              const r = rows.filter((x) => x.stage === stage);
+              if (r.length === 0) return null;
+              return (
+                <div key={stage}>
+                  <dt className="whitespace-nowrap text-[12px] text-muted">{STAGE_LABEL[stage]}</dt>
+                  <dd className="wide tabular text-[20px] font-bold">
+                    <CostMoney title={`Option ${tab}, ${STAGE_LABEL[stage].toLowerCase()}`} rows={r} />
+                  </dd>
+                </div>
+              );
+            })}
+          </dl>
+          <div className="min-w-0 space-y-2">
+            {s?.rationale && <p className="max-w-[75ch] text-[14px] leading-snug text-ink-soft">{s.rationale}</p>}
+            {result && <FlagList flags={result.flags} option={tab} />}
+          </div>
+          <Link
+            href={`/setup/${encodeURIComponent(packet.id)}/${tab}?investor=${preset}`}
+            className={`whitespace-nowrap rounded-md px-5 py-3 text-center text-[14px] font-semibold transition-colors ${
+              tab === soleBest ? "bg-edge text-sheet hover:bg-edge/90" : "bg-ink text-sheet hover:bg-ink-soft"
+            }`}
+          >
+            Set up option {tab}
+          </Link>
+        </div>
+      </section>
+
+      {/* Floating comparison panel */}
+      {panelOpen ? (
+        <aside
+          aria-label="Comparison"
+          className="z-30 mt-5 flex flex-col overflow-hidden rounded-md border border-rule bg-sheet shadow-[0_12px_40px_-12px_rgba(23,38,42,0.35)] lg:fixed lg:bottom-11 lg:right-4 lg:top-[4.25rem] lg:mt-0 lg:w-[350px] xl:right-6 xl:w-[380px]"
+        >
+          <div className="flex items-center justify-between border-b border-rule px-4 py-2.5">
+            <h2 className="text-[14px] font-semibold">Compare and save</h2>
+            <button
+              onClick={onExport}
+              disabled={!result || exporting}
+              className="ml-auto mr-1 rounded-md border border-ink px-2.5 py-1 text-[12px] font-semibold transition-colors hover:bg-ink hover:text-sheet disabled:opacity-40"
+            >
+              {exporting ? "Preparing…" : "Download PDF"}
+            </button>
+            <button onClick={() => setPanelOpen(false)} className="rounded px-2 py-0.5 text-[12px] text-muted hover:bg-paper hover:text-ink">
+              Hide
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
+            <section>
+              <h3 className="text-[13px] font-semibold">What each option costs, and when</h3>
+              <div className="mt-2 h-44">{result && <TotalsChart result={result} />}</div>
+              <div className="mt-3">{result && <TotalsTable result={result} best={soleBest} onPick={setTab} />}</div>
+              <p className="mt-2 text-[11px] text-faint">*Inheritance tax if the family held the lots personally. Shown for comparison with D.</p>
+            </section>
+            <div className="-mx-4 border-t border-rule-soft" />
+            <CliffPanel cliffs={cliffs} loading={loading || (!!result && !cliffs)} bare />
+            {result && (
+              <section className="rounded-md bg-ink p-4 text-sheet [&_button]:border-sheet/30 [&_button:hover]:bg-sheet/10 [&_button:hover]:text-sheet">
+                <h3 className="mb-2 text-[12px] font-medium opacity-70">Option D, family trust</h3>
+                <OptionDTimelineDark result={result} />
+              </section>
+            )}
+            <p className="text-[12px] leading-snug text-muted">Select any £ figure to see its formula, inputs, source rows and the rule it applied.</p>
+          </div>
+        </aside>
+      ) : (
+        <button
+          onClick={() => setPanelOpen(true)}
+          className="fixed bottom-12 right-6 z-30 rounded-full bg-ink px-4 py-2.5 text-[13px] font-semibold text-sheet shadow-lg hover:bg-ink-soft"
+        >
+          Compare and save{cliffs && cliffs.length > 0 ? ` (${cliffs.length} savings)` : ""}
+        </button>
+      )}
     </div>
   );
 }

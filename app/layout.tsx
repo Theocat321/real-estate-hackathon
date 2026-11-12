@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen pb-10">
         <SourceDrawerProvider>
           <SiteHeader />
-          <main className="mx-auto max-w-[1400px] px-6 py-8">{children}</main>
+          <main className="px-6 py-8">{children}</main>
           <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-rule bg-paper/95 backdrop-blur">
             <ul className="mx-auto flex h-8 max-w-[1400px] items-center gap-5 px-6 text-[11px] text-muted">
               {footerParts.map((p, i) => (

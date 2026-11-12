@@ -55,7 +55,7 @@ export default function StartPage() {
   const total = upload?.properties.reduce((s, p) => s + (p.price_gbp?.value ?? 0), 0) ?? 0;
 
   return (
-    <div className="grid gap-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16">
+    <div className="mx-auto grid max-w-[1400px] gap-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16">
       <div className="max-w-[640px]">
         <h1 className="wide text-[40px] font-extrabold leading-[1.05] tracking-[-0.02em] sm:text-[52px]">Who should own the building?</h1>
         <p className="mt-5 max-w-[56ch] text-[17px] leading-relaxed text-ink-soft">

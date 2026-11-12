@@ -62,7 +62,7 @@ export default function PacketPage() {
   ];
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="mx-auto grid max-w-[1400px] gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="min-w-0 space-y-10">
         <section className="edged rounded-md bg-sheet p-7">
           <p className="text-[13px] font-medium text-edge">Starting property</p>

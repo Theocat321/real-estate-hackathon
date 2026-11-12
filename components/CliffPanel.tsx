@@ -5,10 +5,10 @@ import { CostMoney } from "@/components/SourceDrawer";
 import { gbp } from "@/lib/api";
 
 /** "Thresholds near this packet": small changes that move the tax a lot. */
-export function CliffPanel({ cliffs, loading }: { cliffs: Cliff[] | null; loading: boolean }) {
+export function CliffPanel({ cliffs, loading, bare = false }: { cliffs: Cliff[] | null; loading: boolean; bare?: boolean }) {
   return (
-    <section className="rounded-md border border-rule bg-sheet p-4">
-      <h2 className="text-[14px] font-semibold">Thresholds near this packet</h2>
+    <section className={bare ? "" : "rounded-md border border-rule bg-sheet p-4"}>
+      <h2 className={`font-semibold ${bare ? "text-[13px]" : "text-[14px]"}`}>Thresholds near this packet</h2>
       <p className="mt-0.5 text-[12px] leading-snug text-muted">Small changes that move the tax a lot, priced by re-running the engine.</p>
       {loading && !cliffs && <p className="mt-3 text-[12px] text-muted">Checking thresholds…</p>}
       {cliffs && cliffs.length === 0 && <p className="mt-3 text-[12px] text-muted">No thresholds within reach of this packet.</p>}

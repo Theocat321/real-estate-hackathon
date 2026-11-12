@@ -67,7 +67,7 @@ export function TotalsChart({ result }: { result: EngineResult }) {
 }
 
 /** Totals table, every figure clickable. */
-export function TotalsTable({ result, best }: { result: EngineResult; best?: OptionId | null }) {
+export function TotalsTable({ result, best, onPick }: { result: EngineResult; best?: OptionId | null; onPick?: (o: OptionId) => void }) {
   const stages = STAGES.filter((s) => OPTIONS.some((o) => result.totals[o]?.[s] != null));
   return (
     <table className="w-full text-[13px]">
@@ -84,7 +84,15 @@ export function TotalsTable({ result, best }: { result: EngineResult; best?: Opt
       <tbody>
         {OPTIONS.map((o) => (
           <tr key={o} className="border-t border-rule-soft">
-            <td className={`py-1.5 font-bold ${o === best ? "text-edge" : ""}`}>{o}</td>
+            <td className={`py-1.5 font-bold ${o === best ? "text-edge" : ""}`}>
+              {onPick ? (
+                <button onClick={() => onPick(o)} className="rounded px-1 hover:bg-paper" aria-label={`Show option ${o}`}>
+                  {o}
+                </button>
+              ) : (
+                o
+              )}
+            </td>
             {stages.map((s) => {
               const rows = result.rows.filter((r) => r.option === o && r.stage === s);
               return (

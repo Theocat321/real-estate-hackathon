@@ -87,7 +87,7 @@ function layout(structure: Structure, rows: CostRow[]): { nodes: Node<StructNode
   return { nodes, edges };
 }
 
-export function StructureChart({ structure, rows }: { structure: Structure; rows: CostRow[] }) {
+export function StructureChart({ structure, rows, large = false }: { structure: Structure; rows: CostRow[]; large?: boolean }) {
   const { nodes, edges } = useMemo(() => layout(structure, rows), [structure, rows]);
   return (
     <div className="survey-grid h-full w-full">
@@ -96,7 +96,8 @@ export function StructureChart({ structure, rows }: { structure: Structure; rows
         edges={edges}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.06, maxZoom: 1.1 }}
+        fitViewOptions={{ padding: large ? 0.12 : 0.06, maxZoom: large ? 1.6 : 1.1 }}
+        key={`${structure.option}-${large}`}
         nodesConnectable={false}
         elementsSelectable={false}
         panOnScroll={false}
