@@ -75,7 +75,7 @@ function StructNodeView({ data }: NodeProps<Node<StructNodeData>>) {
 
 const nodeTypes = { struct: StructNodeView };
 
-function layout(structure: Structure, rows: CostRow[], flags: Flag[]): { nodes: Node<StructNodeData>[]; edges: Edge[] } {
+function layout(structure: Structure, rows: CostRow[], flags: readonly Flag[]): { nodes: Node<StructNodeData>[]; edges: Edge[] } {
   const g = new dagre.graphlib.Graph();
   g.setGraph({ rankdir: "TB", nodesep: 14, ranksep: 28, marginx: 8, marginy: 8 });
   g.setDefaultEdgeLabel(() => ({}));
@@ -111,7 +111,10 @@ function layout(structure: Structure, rows: CostRow[], flags: Flag[]): { nodes: 
   return { nodes, edges };
 }
 
-export function StructureChart({ structure, rows, flags = [], large = false }: { structure: Structure; rows: CostRow[]; flags?: Flag[]; large?: boolean }) {
+/** Stable default so the layout memo does not recompute on every render. */
+const NO_FLAGS: readonly Flag[] = Object.freeze([]);
+
+export function StructureChart({ structure, rows, flags = NO_FLAGS, large = false }: { structure: Structure; rows: CostRow[]; flags?: readonly Flag[]; large?: boolean }) {
   const { nodes, edges } = useMemo(() => layout(structure, rows, flags), [structure, rows, flags]);
   return (
     <div className="flex h-full w-full flex-col">

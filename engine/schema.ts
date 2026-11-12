@@ -52,6 +52,9 @@ export const StructureSchema = z.object({
   rationale: z.string(),
 });
 
+/** ScenarioInput.assumptions; absent flags mean false. Shared by /api/engine and /api/optimise. */
+export const AssumptionsSchema = z.object({ rental_relief: z.boolean().optional(), distribute_profits: z.boolean().optional() });
+
 export const ScenarioInputSchema: z.ZodType<ScenarioInput> = z.object({
   packet: z.object({
     id: z.string(),
@@ -68,7 +71,5 @@ export const ScenarioInputSchema: z.ZodType<ScenarioInput> = z.object({
   structures: z.array(StructureSchema).min(1),
   investors: z.array(z.object({ type: InvestorType, label: z.string(), pct: z.number() })),
   settlor_nrb_available_gbp: z.number().int().nonnegative().optional(),
-  assumptions: z
-    .object({ rental_relief: z.boolean().optional(), distribute_profits: z.boolean().optional() })
-    .optional(),
+  assumptions: AssumptionsSchema.optional(),
 });

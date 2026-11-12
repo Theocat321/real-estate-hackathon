@@ -11,7 +11,7 @@ export const STAGE_LABEL: Record<Stage, string> = {
   hold: "Each year",
   exit: "On sale",
   ten_year: "Every 10 years",
-  death: "On death (if held personally)",
+  death: "On death (family's share, if held personally)",
 };
 const STAGE_COLOR: Record<Stage, string> = {
   acquire: "#17262a",
@@ -217,7 +217,7 @@ export function OptionDTimeline({ result }: { result: EngineResult }) {
   const steps = [
     { label: "Now, into trust", rows: entry, tone: "bg-ink" },
     { label: "Each 10 years, at most", rows: ten, tone: "bg-edge" },
-    { label: "On death, if held personally", rows: death, tone: "bg-rule", note: "Comparison only. Not a cost of D." },
+    { label: "On death, family's share if held personally", rows: death, tone: "bg-rule", note: "Comparison only. Not a cost of D." },
   ];
   return (
     <div>

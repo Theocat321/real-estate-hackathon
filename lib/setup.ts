@@ -213,7 +213,7 @@ const STAGE_WORDS: Record<Stage, string> = {
   hold: "Each year",
   exit: "On sale",
   ten_year: "Every 10 years",
-  death: "On death, if held personally (comparison)",
+  death: "On death, family's share if held personally (comparison)",
 };
 
 /** Plain-text brief an investor can paste into an email to advisers. */

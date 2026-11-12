@@ -398,7 +398,7 @@ function Summary({ packet, structures, result, stages, best, investor }: { packe
         ))}
         {stages.includes("death") && (
           <Text style={{ fontSize: 6.8, color: C.muted, marginTop: 4 }}>
-            *Inheritance tax if the family held the lots personally. Shown for comparison with the trust option only.
+            *Inheritance tax on the family's share if the family held it personally. Shown for comparison with the trust option only.
           </Text>
         )}
       </View>

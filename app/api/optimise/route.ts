@@ -1,12 +1,10 @@
-import { z } from "zod";
 import type { Assumptions, Investor, OptionId, Packet, Property } from "@/contracts";
 import { optimise, type StructureBuilder } from "@/engine/optimise";
 import { buildA, buildB, buildC, buildD } from "@/agent/structures";
 import { matchCandidates } from "@/lib/db";
+import { AssumptionsSchema } from "@/engine/schema";
 
 export const runtime = "nodejs";
-
-const AssumptionsSchema = z.object({ rental_relief: z.boolean().optional(), distribute_profits: z.boolean().optional() });
 
 const BUILD: Record<OptionId, (p: Packet, inv: Investor[]) => ReturnType<typeof buildA>> = {
   A: (p, inv) => buildA(p, inv),
