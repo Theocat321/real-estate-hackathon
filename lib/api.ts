@@ -77,6 +77,19 @@ export async function match(req: MatchRequest): Promise<Packet> {
   return postJson<Packet>("/api/match", req);
 }
 
+/** POST /api/topup: add real residential lots from the data until the packet has six homes. */
+export async function topUpToSixHomes(packet: Packet): Promise<Packet> {
+  return postJson<Packet>("/api/topup", { packet });
+}
+
+/** Remembers which packet a topped-up packet came from, so the top-up can be undone. */
+export function rememberBase(toppedId: string, baseId: string): void {
+  if (typeof window !== "undefined") sessionStorage.setItem(`ss:base:${toppedId}`, baseId);
+}
+export function baseOf(id: string): string | null {
+  return typeof window === "undefined" ? null : sessionStorage.getItem(`ss:base:${id}`);
+}
+
 /** POST /api/structures */
 export async function buildStructures(packet: Packet, investors: Investor[]): Promise<StructuresResponse> {
   return postJson<StructuresResponse>("/api/structures", { packet, investors });

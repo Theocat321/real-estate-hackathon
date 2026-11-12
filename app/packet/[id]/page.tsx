@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import type { Packet, Property, Sourced } from "@/contracts";
 import { PartsMoney, SourcedMoney } from "@/components/SourceDrawer";
 import { Figure, Notice, UseTag } from "@/components/ui";
-import { gbp, loadPacket, match, savePacket } from "@/lib/api";
+import { baseOf, gbp, loadPacket, rememberBase, savePacket, topUpToSixHomes } from "@/lib/api";
 
 export default function PacketPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,22 +35,34 @@ export default function PacketPage() {
   if (!packet) return <p className="text-muted">Loading packet…</p>;
 
   const seed = packet.items.find((p) => p.id === packet.seed_id) ?? packet.items[0];
-  const sixPlus = packet.totals.dwellings >= 6 && packet.items.every((p) => p.use === "residential");
+  // Homes that count towards the six-dwelling SDLT rule (residential, England or Northern Ireland).
+  const homes = packet.items
+    .filter((p) => p.use === "residential" && (p.nation === "england" || p.nation === "ni"))
+    .reduce((n, p) => n + Math.max(1, p.dwellings), 0);
+  const base = baseOf(packet.id);
 
-  async function toggleSixHomes() {
+  async function addHomes() {
     if (!packet) return;
     setBusy(true);
     setError(null);
     try {
-      const next = await match(sixPlus ? { seed_id: packet.seed_id, n: 5 } : { seed_id: packet.seed_id, use: "residential", min_dwellings: 6 });
+      const next = await topUpToSixHomes(packet);
+      rememberBase(next.id, packet.id);
       savePacket(next);
-      router.replace(`/packet/${encodeURIComponent(next.id)}`);
       setPacket(next);
+      router.replace(`/packet/${encodeURIComponent(next.id)}`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
     }
+  }
+
+  function removeAdded() {
+    const prev = base ? loadPacket(base) : null;
+    if (!prev) return;
+    setPacket(prev);
+    router.replace(`/packet/${encodeURIComponent(prev.id)}`);
   }
 
   const facts: [string, string][] = [
@@ -179,16 +191,33 @@ export default function PacketPage() {
           </dl>
         </section>
 
-        <label className={`flex cursor-pointer items-start gap-3 rounded-md border bg-sheet p-4 text-[14px] ${sixPlus ? "border-ink" : "border-rule"}`}>
-          <input type="checkbox" checked={sixPlus} onChange={toggleSixHomes} disabled={busy} className="mt-1 size-4 accent-[var(--color-ink)]" />
-          <span>
-            <span className="font-semibold">Rebuild as six or more homes</span>
-            <span className="mt-0.5 block text-[13px] leading-snug text-muted">
-              Re-match as a residential packet of at least six dwellings. Stamp duty then uses non-residential rates.
-            </span>
-            {busy && <span className="mt-1 block text-[12px] text-muted">Re-matching…</span>}
-          </span>
-        </label>
+        {homes > 0 && (
+          <section className={`rounded-md border bg-sheet p-4 text-[14px] ${homes >= 6 ? "border-ink" : "border-rule"}`}>
+            <p className="font-semibold">
+              {homes} {homes === 1 ? "home" : "homes"}
+              {homes >= 6 ? ": six or more" : `: ${6 - homes} short of six`}
+            </p>
+            <p className="mt-0.5 text-[13px] leading-snug text-muted">
+              {homes >= 6
+                ? "Bought together in one transaction, six or more homes pay stamp duty at non-residential rates."
+                : "Six or more homes bought in one transaction pay stamp duty at non-residential rates, often less."}
+            </p>
+            {homes < 6 && (
+              <button
+                onClick={addHomes}
+                disabled={busy}
+                className="mt-3 rounded-md border border-ink px-3 py-1.5 text-[13px] font-semibold transition-colors hover:bg-ink hover:text-sheet disabled:opacity-50"
+              >
+                {busy ? "Finding homes…" : `Add ${6 - homes} ${6 - homes === 1 ? "home" : "homes"} from the data`}
+              </button>
+            )}
+            {homes >= 6 && base && (
+              <button onClick={removeAdded} className="mt-3 text-[13px] font-medium text-muted underline decoration-rule underline-offset-2 hover:text-ink">
+                Remove the added homes
+              </button>
+            )}
+          </section>
+        )}
         {error && <Notice tone="error">{error}</Notice>}
 
         <Link

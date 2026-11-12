@@ -153,19 +153,28 @@ function priceCliffs(input: ScenarioInput, base: EngineResult): Cliff[] {
 
 /* ───────────────────────── six homes ───────────────────────── */
 
-function sixHomesCliff(input: ScenarioInput, base: EngineResult, candidates: Property[]): Cliff | null {
-  const items = input.packet.items;
-  const res = items.filter((p) => p.use === "residential" && p.price_gbp && PRICED_NATIONS.has(p.nation));
-  const homes = res.reduce((n, p) => n + Math.max(1, p.dwellings), 0);
-  if (res.length === 0 || homes < 2 || homes >= NONRES_DWELLING_THRESHOLD) return null;
-  const need = NONRES_DWELLING_THRESHOLD - homes;
-  if (need > 3) return null;
+/** Homes in the packet that count towards the six-dwelling rule. */
+export function homesIn(items: Property[]): number {
+  return items.filter((p) => p.use === "residential" && p.price_gbp && PRICED_NATIONS.has(p.nation)).reduce((n, p) => n + Math.max(1, p.dwellings), 0);
+}
 
+/**
+ * Real residential lots from `candidates` that take `items` to `target` homes: same nation,
+ * same postcode area first, then closest in price to the packet's homes. Null if not enough.
+ */
+export function pickTopUp(items: Property[], candidates: Property[], target = NONRES_DWELLING_THRESHOLD): { added: Property[]; homes: number } | null {
+  const res = items.filter((p) => p.use === "residential" && p.price_gbp && PRICED_NATIONS.has(p.nation));
+  const ref = res.length > 0 ? res : items.filter((p) => p.price_gbp);
+  if (ref.length === 0) return null;
+  const homes = homesIn(items);
+  const need = target - homes;
+  if (need <= 0) return { added: [], homes };
   const inPacket = new Set(items.map((p) => p.id));
-  const area = res[0].postcode_area;
-  const typical = res.reduce((s, p) => s + p.price_gbp!.value, 0) / res.length;
+  const area = ref[0].postcode_area;
+  const nation = PRICED_NATIONS.has(ref[0].nation) ? ref[0].nation : "england";
+  const typical = res.length > 0 ? res.reduce((s, p) => s + p.price_gbp!.value, 0) / res.length : 300_000;
   const pool = candidates
-    .filter((c) => c.use === "residential" && c.price_gbp && !inPacket.has(c.id) && c.nation === res[0].nation && c.property_type !== "unknown")
+    .filter((c) => c.use === "residential" && c.price_gbp && !inPacket.has(c.id) && c.nation === nation && c.property_type !== "unknown")
     .filter((c) => !/land|site|garage|ground rent/i.test(c.property_type))
     .sort((a, b) => {
       const byArea = Number(b.postcode_area === area) - Number(a.postcode_area === area);
@@ -178,7 +187,18 @@ function sixHomesCliff(input: ScenarioInput, base: EngineResult, candidates: Pro
     added.push(c);
     got += Math.max(1, c.dwellings);
   }
-  if (got < need) return null;
+  return got < need ? null : { added, homes: homes + got };
+}
+
+function sixHomesCliff(input: ScenarioInput, base: EngineResult, candidates: Property[]): Cliff | null {
+  const items = input.packet.items;
+  const homes = homesIn(items);
+  if (homes < 2 || homes >= NONRES_DWELLING_THRESHOLD) return null;
+  if (NONRES_DWELLING_THRESHOLD - homes > 3) return null;
+  const pick = pickTopUp(items, candidates);
+  if (!pick) return null;
+  const { added } = pick;
+  const got = pick.homes - homes;
 
   const combined = runEngine(scenario(input, [...items, ...added]));
   const alone = runEngine(scenario(input, added));
