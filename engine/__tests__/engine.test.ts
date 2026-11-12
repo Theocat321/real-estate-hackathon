@@ -365,6 +365,18 @@ describe("real investors in A, B and D", () => {
     expect(r.flags.some((f) => f.rule_id === "trust_settlor")).toBe(true);
   });
 
+  it("investor_pct tolerates rounding like normalisePcts (within 0.5 of 100)", () => {
+    const items = [resProperty("h", 400_000)];
+    const pcts = (xs: number[]): Investor[] => xs.map((pct, i) => ({ type: "uk_pension", label: `P${i}`, pct }));
+    const flagsFor = (inv: Investor[]) => run(items, inv, buildStructureTemplates(packetOf(items), inv)).flags.filter((f) => f.rule_id === "investor_pct");
+    const rescaled = pcts([50, 30, 15].map((x) => (x * 100) / 95));
+    expect(rescaled.reduce((t, i) => t + i.pct, 0)).not.toBe(100);
+    expect(flagsFor(rescaled)).toEqual([]);
+    expect(flagsFor(pcts([60, 39.6]))).toEqual([]);
+    expect(flagsFor(pcts([60, 30]))[0].message).toBe("Investor shares add up to 90%, not 100%.");
+    expect(flagsFor(pcts([60, 30.25]))[0].message).toBe("Investor shares add up to 90.3%, not 100%.");
+  });
+
   it("no investors gives today's totals", () => {
     const p = structuredClone(sample.packet) as Packet;
     const t = runEngine({ packet: p, investors: [], structures: buildStructureTemplates(p, []) }).totals;

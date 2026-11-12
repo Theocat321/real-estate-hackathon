@@ -132,8 +132,9 @@ export function runEngine(input: ScenarioInput): EngineResult {
     const spv = s.nodes.find((n) => n.kind === "company") ?? buyer;
     const flag = (f: Omit<Flag, "option">) => flags.push({ option: opt, ...f });
     const investorPct = input.investors.reduce((t, i) => t + i.pct, 0);
-    if (input.investors.length > 0 && investorPct !== 100) {
-      flag({ entity_id: buyer.id, rule_id: "investor_pct", severity: "review", message: `Investor shares add up to ${investorPct}%, not 100%.` });
+    // Same tolerance as agent/extract.ts normalisePcts: within 0.5 of 100 is rounding, not a gap.
+    if (input.investors.length > 0 && Math.abs(investorPct - 100) > 0.5) {
+      flag({ entity_id: buyer.id, rule_id: "investor_pct", severity: "review", message: `Investor shares add up to ${Math.round(investorPct * 10) / 10}%, not 100%.` });
     }
     const row = (stage: Stage, tax: TaxCode, entity_id: string, amount_gbp: number, formula: string, inputs: Input[], rule: RuleRef) =>
       rows.push({ option: opt, stage, entity_id, tax, amount_gbp, formula, inputs, rule });
