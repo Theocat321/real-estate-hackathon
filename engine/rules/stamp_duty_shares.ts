@@ -1,10 +1,9 @@
-import type { RuleRef } from "../types";
+import type { RuleRef } from "@/contracts";
 import { fmt } from "../money";
 import { AS_OF, CITE } from "./citations";
 
 export const STAMP_DUTY_SHARES_RULE: RuleRef = {
   id: "stamp_duty_shares",
-  name: "Stamp duty on transfer of PropCo shares (0.5%)",
   citation_url: CITE.shares,
   as_of: AS_OF,
 };

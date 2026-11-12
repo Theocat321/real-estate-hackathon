@@ -1,68 +1,71 @@
+// Zod mirror of contracts/index.ts ScenarioInput (validation only; types come from the contract).
 import { z } from "zod";
-
-export const CONTRACT_VERSION = "1.0.0";
-
-export const OptionSchema = z.enum(["A", "B", "C", "D"]);
-export const StageSchema = z.enum(["acquire", "hold", "exit", "ten_year", "death"]);
+import type { ScenarioInput } from "@/contracts";
 
 export const SourceRefSchema = z.object({
-  kind: z.enum(["listing", "auction", "brochure", "hmlr", "user", "assumption"]),
-  file: z.string().optional(),
+  kind: z.enum(["listing", "auction", "brochure", "upload", "rule", "user"]),
+  file: z.string(),
   row: z.number().int().optional(),
   page: z.number().int().optional(),
   record_id: z.string().optional(),
-  excerpt: z.string().optional(),
-  label: z.string().min(1),
   url: z.string().optional(),
-  ref: z.string().optional(),
+  excerpt: z.string().optional(),
 });
+
+const sourcedNumber = z.object({ value: z.number(), source: SourceRefSchema });
 
 export const PropertySchema = z.object({
   id: z.string().min(1),
-  name: z.string().min(1),
-  nation: z.enum(["england", "ni", "scotland", "wales"]).default("england"),
-  use: z.enum(["residential", "commercial", "mixed"]),
-  price_gbp: z.number().int().nonnegative(),
-  /** Number of dwellings in this property (residential only). */
-  dwellings: z.number().int().nonnegative().default(1),
-  source: SourceRefSchema,
+  address: z.string(),
+  postcode: z.string(),
+  postcode_area: z.string(),
+  nation: z.enum(["england", "wales", "scotland", "ni"]),
+  use: z.enum(["commercial", "residential", "mixed"]),
+  property_type: z.string(),
+  tenure: z.enum(["freehold", "leasehold", "unknown"]),
+  price_gbp: sourcedNumber.nullable(),
+  price_kind: z.enum(["asking", "guide", "achieved", "hmlr"]).nullable(),
+  rent_pa_gbp: sourcedNumber.nullable(),
+  yield_pct: sourcedNumber.nullable(),
+  size_sqft: sourcedNumber.nullable(),
+  dwellings: z.number().int().nonnegative(),
 });
 
-export const StructureNodeSchema = z.object({
+export const InvestorType = z.enum(["uk_pension", "family_office_uk", "family_office_nonuk", "uk_company"]);
+
+export const StructNodeSchema = z.object({
   id: z.string().min(1),
-  kind: z.enum(["investor", "propco", "fund", "trust", "settlor", "beneficiary", "property"]),
-  label: z.string().min(1),
-  entity_type: z.enum(["individual", "company", "trust", "unit_trust"]).optional(),
-});
-
-export const StructureEdgeSchema = z.object({
-  from: z.string(),
-  to: z.string(),
-  relation: z.string().optional(),
+  kind: z.enum(["investor", "trust", "fund", "company", "property"]),
+  label: z.string(),
+  jurisdiction: z.enum(["UK", "Jersey", "Guernsey", "Luxembourg", "Other"]).optional(),
+  investor_type: InvestorType.optional(),
+  trust_type: z.enum(["discretionary", "unit_trust"]).optional(),
+  fund_type: z.enum(["JPUT", "RIF"]).optional(),
+  property_id: z.string().optional(),
 });
 
 export const StructureSchema = z.object({
-  option: OptionSchema,
-  label: z.string().optional(),
-  nodes: z.array(StructureNodeSchema).min(1),
-  edges: z.array(StructureEdgeSchema).default([]),
+  option: z.enum(["A", "B", "C", "D"]),
+  name: z.string(),
+  nodes: z.array(StructNodeSchema).min(1),
+  edges: z.array(z.object({ from: z.string(), to: z.string(), pct: z.number() })),
+  rationale: z.string(),
 });
 
-export const ScenarioInputSchema = z.object({
-  contract_version: z.string().optional(),
-  scenario_id: z.string().optional(),
-  properties: z.array(PropertySchema).min(1),
+export const ScenarioInputSchema: z.ZodType<ScenarioInput> = z.object({
+  packet: z.object({
+    id: z.string(),
+    seed_id: z.string(),
+    items: z.array(PropertySchema).min(1),
+    totals: z.object({
+      price_gbp: z.number(),
+      rent_pa_gbp: z.number(),
+      blended_yield_pct: z.number().nullable(),
+      dwellings: z.number(),
+    }),
+    match_reason: z.string(),
+  }),
   structures: z.array(StructureSchema).min(1),
-  settlor_nrb_available_gbp: z.number().int().nonnegative().default(325000),
+  investors: z.array(z.object({ type: InvestorType, label: z.string(), pct: z.number() })),
+  settlor_nrb_available_gbp: z.number().int().nonnegative().optional(),
 });
-
-export type Option = z.infer<typeof OptionSchema>;
-export type Stage = z.infer<typeof StageSchema>;
-export type SourceRef = z.infer<typeof SourceRefSchema>;
-export type Property = z.output<typeof PropertySchema>;
-export type StructureNode = z.infer<typeof StructureNodeSchema>;
-export type Structure = z.output<typeof StructureSchema>;
-/** Parsed (defaults applied) scenario. */
-export type ScenarioInput = z.output<typeof ScenarioInputSchema>;
-/** Raw scenario as sent over the wire (defaults optional). */
-export type ScenarioInputRaw = z.input<typeof ScenarioInputSchema>;

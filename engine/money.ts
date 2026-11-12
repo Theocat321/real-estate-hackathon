@@ -31,4 +31,4 @@ export function fmt(n: number): string {
   return n.toLocaleString("en-GB");
 }
 
-export const ASSUMPTION = (label: string) => ({ kind: "assumption" as const, label });
+

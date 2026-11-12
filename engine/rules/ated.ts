@@ -1,10 +1,9 @@
-import type { RuleRef } from "../types";
+import type { RuleRef } from "@/contracts";
 import { fmt } from "../money";
 import { AS_OF, CITE } from "./citations";
 
 export const ATED_RULE: RuleRef = {
   id: "ated",
-  name: "Annual Tax on Enveloped Dwellings",
   citation_url: CITE.ated,
   as_of: AS_OF,
 };

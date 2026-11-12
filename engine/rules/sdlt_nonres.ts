@@ -1,10 +1,9 @@
-import type { RuleRef } from "../types";
+import type { RuleRef } from "@/contracts";
 import { banded, describeBands, fmt, type Band } from "../money";
 import { AS_OF, CITE } from "./citations";
 
 export const SDLT_NONRES_RULE: RuleRef = {
   id: "sdlt_nonres",
-  name: "SDLT non-residential / mixed-use rates",
   citation_url: CITE.sdlt,
   as_of: AS_OF,
 };

@@ -1,0 +1,341 @@
+{
+  "contract_version": "1.0.0",
+  "packet": {
+    "id": "pkt-sample-commercial",
+    "seed_id": "allsop-6392cf9c",
+    "items": [
+      {
+        "id": "allsop-6392cf9c",
+        "address": "Wireless House, Westfield Industrial Estate, Midsomer Norton, Avon, BA3 4BS",
+        "postcode": "BA3 4BS",
+        "postcode_area": "BA",
+        "nation": "england",
+        "use": "commercial",
+        "property_type": "commercial",
+        "tenure": "unknown",
+        "price_gbp": {
+          "value": 890000,
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "record_id": "allsop-6392cf9c",
+            "url": "https://www.allsop.co.uk/api/lot/7daca700-1193-11f1-a689-0242ac110002",
+            "excerpt": "achieved_price_gbp 890000 (guide £625,000 - £675,000, +42.4%)"
+          }
+        },
+        "price_kind": "achieved",
+        "rent_pa_gbp": null,
+        "yield_pct": null,
+        "size_sqft": null,
+        "dwellings": 0
+      },
+      {
+        "id": "allsop-269dbb85",
+        "address": "1 Briar Hill, Stacey Bushes, Milton Keynes, Buckinghamshire, MK12 6HX",
+        "postcode": "MK12 6HX",
+        "postcode_area": "MK",
+        "nation": "england",
+        "use": "commercial",
+        "property_type": "commercial",
+        "tenure": "unknown",
+        "price_gbp": {
+          "value": 515000,
+          "source": {
+            "kind": "auction",
+            "file": "auction-results.csv",
+            "record_id": "allsop-269dbb85",
+            "url": "https://www.allsop.co.uk/api/lot/fec3e466-2930-11f1-88c6-0242ac110002",
+            "excerpt": "achieved_price_gbp 515000 (guide £400,000 - £440,000, +28.8%)"
+          }
+        },
+        "price_kind": "achieved",
+        "rent_pa_gbp": null,
+        "yield_pct": null,
+        "size_sqft": null,
+        "dwellings": 0
+      }
+    ],
+    "totals": {
+      "price_gbp": 1405000,
+      "rent_pa_gbp": 0,
+      "blended_yield_pct": null,
+      "dwellings": 0
+    },
+    "match_reason": "Two commercial auction lots in southern England sold by Allsop in 2026, both above guide."
+  },
+  "investors": [
+    {
+      "type": "uk_pension",
+      "label": "UK pension fund",
+      "pct": 60
+    },
+    {
+      "type": "family_office_uk",
+      "label": "UK family office",
+      "pct": 40
+    }
+  ],
+  "structures": [
+    {
+      "option": "A",
+      "name": "Buy each property directly",
+      "rationale": "The buyer owns each building outright. Simplest, but stamp duty land tax is paid on every purchase and every later sale is an asset sale.",
+      "nodes": [
+        {
+          "id": "buyer",
+          "kind": "investor",
+          "label": "Buyer",
+          "jurisdiction": "UK",
+          "investor_type": "uk_company"
+        },
+        {
+          "id": "p1",
+          "kind": "property",
+          "label": "Wireless House",
+          "property_id": "allsop-6392cf9c"
+        },
+        {
+          "id": "p2",
+          "kind": "property",
+          "label": "1 Briar Hill",
+          "property_id": "allsop-269dbb85"
+        }
+      ],
+      "edges": [
+        {
+          "from": "buyer",
+          "to": "p1",
+          "pct": 100
+        },
+        {
+          "from": "buyer",
+          "to": "p2",
+          "pct": 100
+        }
+      ]
+    },
+    {
+      "option": "B",
+      "name": "One UK SPV owns the portfolio",
+      "rationale": "PropCo Ltd buys the buildings once; a later sale can be of PropCo's shares at 0.5% stamp duty instead of SDLT, but the buyer inherits PropCo's history.",
+      "nodes": [
+        {
+          "id": "buyer",
+          "kind": "investor",
+          "label": "Buyer",
+          "jurisdiction": "UK",
+          "investor_type": "uk_company"
+        },
+        {
+          "id": "spv",
+          "kind": "company",
+          "label": "PropCo Ltd",
+          "jurisdiction": "UK"
+        },
+        {
+          "id": "p1",
+          "kind": "property",
+          "label": "Wireless House",
+          "property_id": "allsop-6392cf9c"
+        },
+        {
+          "id": "p2",
+          "kind": "property",
+          "label": "1 Briar Hill",
+          "property_id": "allsop-269dbb85"
+        }
+      ],
+      "edges": [
+        {
+          "from": "buyer",
+          "to": "spv",
+          "pct": 100
+        },
+        {
+          "from": "spv",
+          "to": "p1",
+          "pct": 100
+        },
+        {
+          "from": "spv",
+          "to": "p2",
+          "pct": 100
+        }
+      ]
+    },
+    {
+      "option": "C",
+      "name": "Fund (unit trust) owns the SPV",
+      "rationale": "A Jersey property unit trust pools the pension fund and family office; gains are taxed by investor type, which suits a mixed investor base.",
+      "nodes": [
+        {
+          "id": "inv1",
+          "kind": "investor",
+          "label": "UK pension fund",
+          "investor_type": "uk_pension",
+          "jurisdiction": "UK"
+        },
+        {
+          "id": "inv2",
+          "kind": "investor",
+          "label": "UK family office",
+          "investor_type": "family_office_uk",
+          "jurisdiction": "UK"
+        },
+        {
+          "id": "fund",
+          "kind": "fund",
+          "label": "JPUT",
+          "fund_type": "JPUT",
+          "jurisdiction": "Jersey"
+        },
+        {
+          "id": "spv",
+          "kind": "company",
+          "label": "PropCo Ltd",
+          "jurisdiction": "UK"
+        },
+        {
+          "id": "p1",
+          "kind": "property",
+          "label": "Wireless House",
+          "property_id": "allsop-6392cf9c"
+        },
+        {
+          "id": "p2",
+          "kind": "property",
+          "label": "1 Briar Hill",
+          "property_id": "allsop-269dbb85"
+        }
+      ],
+      "edges": [
+        {
+          "from": "inv1",
+          "to": "fund",
+          "pct": 60
+        },
+        {
+          "from": "inv2",
+          "to": "fund",
+          "pct": 40
+        },
+        {
+          "from": "fund",
+          "to": "spv",
+          "pct": 100
+        },
+        {
+          "from": "spv",
+          "to": "p1",
+          "pct": 100
+        },
+        {
+          "from": "spv",
+          "to": "p2",
+          "pct": 100
+        }
+      ]
+    },
+    {
+      "option": "D",
+      "name": "Family trust owns the SPV",
+      "rationale": "A discretionary trust holds PropCo for the family: an inheritance-tax entry charge now in exchange for keeping the portfolio out of the family's estates.",
+      "nodes": [
+        {
+          "id": "settlor",
+          "kind": "investor",
+          "label": "Family (settlor)",
+          "investor_type": "family_office_uk",
+          "jurisdiction": "UK"
+        },
+        {
+          "id": "trust",
+          "kind": "trust",
+          "label": "Discretionary trust",
+          "trust_type": "discretionary",
+          "jurisdiction": "UK"
+        },
+        {
+          "id": "spv",
+          "kind": "company",
+          "label": "PropCo Ltd",
+          "jurisdiction": "UK"
+        },
+        {
+          "id": "p1",
+          "kind": "property",
+          "label": "Wireless House",
+          "property_id": "allsop-6392cf9c"
+        },
+        {
+          "id": "p2",
+          "kind": "property",
+          "label": "1 Briar Hill",
+          "property_id": "allsop-269dbb85"
+        }
+      ],
+      "edges": [
+        {
+          "from": "settlor",
+          "to": "trust",
+          "pct": 100
+        },
+        {
+          "from": "trust",
+          "to": "spv",
+          "pct": 100
+        },
+        {
+          "from": "spv",
+          "to": "p1",
+          "pct": 100
+        },
+        {
+          "from": "spv",
+          "to": "p2",
+          "pct": 100
+        }
+      ]
+    }
+  ],
+  "expected_engine": {
+    "note": "Golden values. Engine tests must reproduce these exactly. totals[option][stage] = sum of CostRow.amount_gbp for that option and stage. IHT_ENTRY is stage 'acquire'. IHT_DEATH_COMPARATOR (stage 'death') is what the family would pay holding personally; the UI shows it beside D but it is not a cost of D.",
+    "A": {
+      "acquire": 49250
+    },
+    "B": {
+      "acquire": 49250,
+      "exit": 7025
+    },
+    "D": {
+      "acquire": 265250,
+      "exit": 7025,
+      "ten_year": 64800,
+      "death": 432000
+    },
+    "per_lot": {
+      "allsop-6392cf9c": {
+        "SDLT_NONRES": 34000,
+        "STAMP_DUTY_SHARES": 4450
+      },
+      "allsop-269dbb85": {
+        "SDLT_NONRES": 15250
+      }
+    },
+    "residential_checks": {
+      "company_buys_1100000_dwelling_SDLT_RES_COMPANY_17": 187000,
+      "ATED_1100000_company_held_2026_27": 9450
+    },
+    "C": {
+      "acquire": 49250,
+      "exit": 7025
+    },
+    "D_breakdown": {
+      "SDLT_NONRES": 49250,
+      "IHT_ENTRY": 216000,
+      "STAMP_DUTY_SHARES": 7025,
+      "IHT_TEN_YEAR": 64800,
+      "IHT_DEATH_COMPARATOR": 432000
+    }
+  }
+}

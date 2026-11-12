@@ -1,10 +1,9 @@
-import type { RuleRef } from "../types";
+import type { RuleRef } from "@/contracts";
 import { banded, describeBands, fmt, type Band } from "../money";
 import { AS_OF, CITE } from "./citations";
 
 export const SDLT_RES_RULE: RuleRef = {
   id: "sdlt_res",
-  name: "SDLT residential: higher rates / 17% company rate",
   citation_url: CITE.sdlt,
   as_of: AS_OF,
 };
