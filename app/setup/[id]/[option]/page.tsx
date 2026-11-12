@@ -78,112 +78,138 @@ function Setup() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  return (
-    <div className="mx-auto max-w-[1400px] space-y-8">
-      <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
-        <div className="min-w-0">
-          <Link href={`/studio/${encodeURIComponent(packet.id)}`} className="text-[13px] text-muted hover:text-ink">
-            Back to the comparison
-          </Link>
-          <div className="mt-1 flex items-center gap-3">
-            <span className="wide grid size-10 shrink-0 place-items-center rounded-[3px] bg-ink text-[20px] font-extrabold text-sheet">{option}</span>
-            <h1 className="wide text-[28px] font-bold leading-tight tracking-tight">{structure?.name ?? "Loading structure…"}</h1>
-          </div>
-          <p className="mt-1 text-[14px] text-muted">
-            {packet.items.length} lots, {gbp(packet.totals.price_gbp)}, for {investors.map((i) => i.label).join(" and ")}
-          </p>
-        </div>
-        <dl className="ml-auto flex gap-8">
-          {(["acquire", "hold", "ten_year"] as const).map((stage) => {
-            const r = rows.filter((x) => x.stage === stage);
-            if (r.length === 0) return null;
-            return (
-              <div key={stage}>
-                <dt className="text-[12px] text-muted">{{ acquire: "On purchase", hold: "Each year", ten_year: "Every 10 years" }[stage]}</dt>
-                <dd className="wide tabular text-[22px] font-bold">
-                  <CostMoney title={`Option ${option}, ${stage}`} rows={r} />
-                </dd>
-              </div>
-            );
-          })}
-        </dl>
-      </div>
-      {error && <Notice tone="error">{error}</Notice>}
+  const stageCost = (stage: "acquire" | "hold" | "ten_year") => rows.filter((x) => x.stage === stage);
+  const mailto = `mailto:?subject=${encodeURIComponent(brief.split("\n")[0].replace("Subject: ", ""))}&body=${encodeURIComponent(brief.split("\n").slice(2).join("\n"))}`;
+  const deadlines = steps.filter((s) => s.deadline).length;
 
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_420px]">
+  return (
+    <div className="mx-auto max-w-[1100px]">
+      <Link href={`/studio/${encodeURIComponent(packet.id)}`} className="text-[13px] text-muted hover:text-ink">
+        Back to the comparison
+      </Link>
+
+      {/* What you're setting up, what it costs, one place to act */}
+      <header className="mt-2 rounded-md bg-sheet p-6 shadow-[0_1px_0_var(--color-rule)]">
+        <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
+            <span className="wide grid size-11 shrink-0 place-items-center rounded-[3px] bg-ink text-[22px] font-extrabold text-sheet">{option}</span>
+            <div className="min-w-0">
+              <h1 className="wide text-[26px] font-bold leading-tight tracking-tight">{structure?.name ?? "Loading structure…"}</h1>
+              <p className="mt-1 text-[14px] text-muted">
+                {packet.items.length} lots, {gbp(packet.totals.price_gbp)}, for {investors.map((i) => i.label).join(" and ")}
+              </p>
+            </div>
+          </div>
+          <dl className="flex gap-8">
+            {(["acquire", "hold", "ten_year"] as const).map((stage) => {
+              const r = stageCost(stage);
+              if (r.length === 0) return null;
+              return (
+                <div key={stage}>
+                  <dt className="text-[12px] text-muted">{{ acquire: "Tax on purchase", hold: "Each year", ten_year: "Every 10 years" }[stage]}</dt>
+                  <dd className="wide tabular text-[24px] font-bold leading-tight">
+                    <CostMoney title={`Option ${option}, ${stage}`} rows={r} />
+                  </dd>
+                </div>
+              );
+            })}
+          </dl>
+        </div>
+        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-rule-soft pt-4">
+          <p className="mr-auto text-[14px] text-ink-soft">
+            <span className="font-semibold text-ink">{steps.length} steps</span>, {roles.length} kinds of adviser
+            {deadlines > 0 && <>, {deadlines} legal deadline{deadlines > 1 ? "s" : ""}</>}.
+          </p>
+          <button onClick={copyBrief} className="rounded-md bg-ink px-4 py-2.5 text-[14px] font-semibold text-sheet hover:bg-ink-soft">
+            {copied ? "Copied" : "Copy brief for advisers"}
+          </button>
+          <a href={mailto} className="rounded-md border border-ink px-4 py-2.5 text-[14px] font-semibold hover:bg-ink hover:text-sheet">
+            Email it
+          </a>
+        </div>
+        <details className="group mt-3">
+          <summary className="cursor-pointer text-[13px] text-muted hover:text-ink">Preview the brief</summary>
+          <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-md bg-paper p-4 font-sans text-[13px] leading-relaxed text-ink-soft">{brief}</pre>
+        </details>
+      </header>
+      {error && (
+        <div className="mt-4">
+          <Notice tone="error">{error}</Notice>
+        </div>
+      )}
+
+      <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px]">
+        {/* What to do, in order */}
         <section>
-          <h2 className="wide text-[20px] font-bold tracking-tight">Steps to put it in place</h2>
-          <ol className="mt-4 rounded-md border border-rule bg-sheet">
+          <h2 className="text-[15px] font-semibold">What to do</h2>
+          <ol className="mt-3 space-y-px overflow-hidden rounded-md border border-rule bg-rule">
             {steps.map((s, i) => (
-              <li key={s.id} className="flex gap-4 border-b border-rule-soft px-5 py-4 last:border-0">
-                <span className="tabular mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border border-ink text-[13px] font-semibold">{i + 1}</span>
+              <li key={s.id} className="flex gap-4 bg-sheet px-5 py-3.5">
+                <span className="tabular mt-px grid size-6 shrink-0 place-items-center rounded-full bg-ink text-[12px] font-semibold text-sheet">{i + 1}</span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <h3 className="text-[15px] font-semibold">{s.title}</h3>
+                    <h3 className="text-[15px] font-semibold leading-snug">{s.title}</h3>
                     {s.deadline && <span className="rounded-full bg-edge-soft px-2 py-0.5 text-[12px] font-medium text-edge">{s.deadline}</span>}
                   </div>
-                  <p className="mt-1 max-w-[68ch] text-[14px] leading-relaxed text-ink-soft">{s.detail}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
-                    {s.roles.map((r) => (
-                      <a key={r} href={`#role-${r}`} className="rounded-full bg-paper px-2 py-0.5 font-medium text-ink-soft hover:bg-sage-soft">
-                        {ROLE_LABEL[r]}
-                      </a>
-                    ))}
+                  <p className="mt-0.5 text-[13px] leading-snug text-muted">
+                    {s.detail}{" "}
                     {s.source && (
-                      <a href={s.source.url} target="_blank" rel="noreferrer" className="text-muted underline decoration-rule underline-offset-2 hover:text-ink">
-                        {s.source.label}
+                      <a href={s.source.url} target="_blank" rel="noreferrer" className="underline decoration-rule underline-offset-2 hover:text-ink">
+                        gov.uk
                       </a>
                     )}
-                  </div>
+                  </p>
                 </div>
+                <span className="hidden shrink-0 text-right text-[12px] leading-snug text-ink-soft sm:block sm:w-36">
+                  {s.roles.map((r) => (
+                    <a key={r} href={`#role-${r}`} className="block hover:text-ink hover:underline">
+                      {ROLE_LABEL[r]}
+                    </a>
+                  ))}
+                </span>
               </li>
             ))}
           </ol>
+
           {reviewFlags.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-[14px] font-semibold">Ask your advisers about</h3>
-              <ul className="mt-2 space-y-2">
+            <details className="mt-5 rounded-md border border-review/30 bg-review-soft px-4 py-3">
+              <summary className="cursor-pointer text-[14px] font-semibold text-review">
+                {reviewFlags.length} point{reviewFlags.length > 1 ? "s" : ""} to raise with your adviser
+              </summary>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-snug text-review">
                 {reviewFlags.map((f, i) => (
-                  <li key={i}>
-                    <Notice tone="review">{f.message}</Notice>
-                  </li>
+                  <li key={i}>{f.message}</li>
                 ))}
               </ul>
-            </div>
+            </details>
           )}
         </section>
 
-        <aside className="space-y-8">
-          <section className="rounded-md bg-ink p-5 text-sheet">
-            <h2 className="text-[15px] font-semibold">Brief for your advisers</h2>
-            <p className="mt-1 text-[13px] text-sheet/70">
-              The packet, structure, estimated costs, steps and open questions, ready to paste into an email.
-            </p>
-            <pre className="narrow mt-3 font-sans max-h-56 overflow-auto whitespace-pre-wrap rounded-[3px] bg-sheet/10 p-3 text-[12px] leading-relaxed text-sheet/90">
-              {brief}
-            </pre>
-            <div className="mt-3 flex gap-2">
-              <button onClick={copyBrief} className="rounded-md bg-sheet px-4 py-2 text-[13px] font-semibold text-ink hover:bg-paper">
-                {copied ? "Copied" : "Copy brief"}
-              </button>
-              <a
-                href={`mailto:?subject=${encodeURIComponent(brief.split("\n")[0].replace("Subject: ", ""))}&body=${encodeURIComponent(brief.split("\n").slice(2).join("\n"))}`}
-                className="rounded-md border border-sheet/40 px-4 py-2 text-[13px] font-semibold hover:bg-sheet/10"
-              >
-                Open in email
-              </a>
-            </div>
-          </section>
-          <section>
-            <h2 className="wide text-[20px] font-bold tracking-tight">Who you need</h2>
-            {DIRECTORY && <p className="mt-1 text-[12px] text-muted">{DIRECTORY.note}</p>}
-            <ul className="mt-4 space-y-4">
-              {roles.map((r) => (
-                <RoleBlock key={r} role={r} option={option} fundJurisdiction={structure?.nodes.find((n) => n.kind === "fund")?.jurisdiction} />
-              ))}
-            </ul>
-          </section>
-
+        {/* Who to call */}
+        <aside>
+          <h2 className="text-[15px] font-semibold">Who to call</h2>
+          <ul className="mt-3 space-y-px overflow-hidden rounded-md border border-rule bg-rule">
+            {roles.map((r) => (
+              <RoleBlock key={r} role={r} option={option} fundJurisdiction={structure?.nodes.find((n) => n.kind === "fund")?.jurisdiction} />
+            ))}
+          </ul>
+          {DIRECTORY && (
+            <details className="mt-3">
+              <summary className="cursor-pointer text-[13px] text-muted hover:text-ink">Check a firm on the official registers</summary>
+              <ul className="mt-2 space-y-1.5 text-[13px]">
+                {DIRECTORY.registers
+                  .filter((reg) => reg.roles.some((x) => roles.includes(x)))
+                  .map((reg) => (
+                    <li key={reg.name}>
+                      <a href={reg.url} target="_blank" rel="noreferrer" className="font-medium underline decoration-rule underline-offset-2 hover:decoration-ink">
+                        {reg.name}
+                      </a>
+                    </li>
+                  ))}
+              </ul>
+              <p className="mt-2 text-[12px] text-faint">{DIRECTORY.note}</p>
+            </details>
+          )}
         </aside>
       </div>
     </div>
@@ -192,57 +218,34 @@ function Setup() {
 
 const FUND_ROLES: RoleId[] = ["fund_lawyer", "fund_admin"];
 
+/** One recommended firm per role; the rest behind a toggle. */
 function RoleBlock({ role, option, fundJurisdiction }: { role: RoleId; option: OptionId; fundJurisdiction?: string }) {
   const [all, setAll] = useState(false);
-  const info = DIRECTORY?.roles[role];
-  const matching =
+  const firms =
     DIRECTORY?.firms.filter(
       (f) => f.roles.includes(role) && f.options.includes(option) && (!FUND_ROLES.includes(role) || !fundJurisdiction || f.jurisdiction === fundJurisdiction),
     ) ?? [];
-  const firms = all ? matching : matching.slice(0, 3);
-  const registers = DIRECTORY?.registers.filter((r) => r.roles.includes(role)) ?? [];
+  const shown = all ? firms : firms.slice(0, 1);
   return (
-    <li id={`role-${role}`} className="scroll-mt-6 rounded-md border border-rule bg-sheet p-4">
-      <h3 className="text-[15px] font-semibold">{info?.label ?? ROLE_LABEL[role]}</h3>
-      {info?.why && <p className="mt-0.5 text-[13px] leading-snug text-muted">{info.why}</p>}
-      {firms.length > 0 && (
-        <ul className="mt-3 divide-y divide-rule-soft">
-          {firms.map((f) => (
-            <li key={f.name} className="py-2">
-              <div className="flex items-baseline justify-between gap-2">
-                <a href={f.url} target="_blank" rel="noreferrer" className="text-[14px] font-semibold underline decoration-rule underline-offset-4 hover:decoration-ink">
-                  {f.name}
-                </a>
-                <span className="shrink-0 text-[11px] text-muted">{f.jurisdiction}</span>
-              </div>
-              <p className="mt-0.5 text-[12px] leading-snug text-ink-soft">{f.summary}</p>
-            </li>
-          ))}
-          {matching.length > 3 && (
-            <li className="pt-2">
-              <button onClick={() => setAll((v) => !v)} className="text-[12px] font-semibold underline decoration-rule underline-offset-2 hover:decoration-ink">
-                {all ? "Show fewer" : `Show ${matching.length - 3} more`}
-              </button>
-            </li>
-          )}
-        </ul>
-      )}
-      {registers.length > 0 && (
-        <div className="mt-3 border-t border-rule-soft pt-2">
-          <p className="text-[12px] font-medium text-muted">Find and check more</p>
-          <ul className="mt-1 space-y-1">
-            {registers.map((r) => (
-              <li key={r.name} className="text-[12px] leading-snug">
-                <a href={r.url} target="_blank" rel="noreferrer" className="font-medium underline decoration-rule underline-offset-2 hover:decoration-ink">
-                  {r.name}
-                </a>
-                <span className="text-muted">. {r.how}</span>
-              </li>
-            ))}
-          </ul>
+    <li id={`role-${role}`} className="scroll-mt-6 bg-sheet px-4 py-3">
+      <p className="text-[12px] text-muted">{ROLE_LABEL[role]}</p>
+      {shown.length === 0 && <p className="text-[13px] text-faint">Use the registers below to find one.</p>}
+      {shown.map((f) => (
+        <div key={f.name} className="mt-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <a href={f.url} target="_blank" rel="noreferrer" className="text-[15px] font-semibold underline decoration-rule underline-offset-4 hover:decoration-ink">
+              {f.name}
+            </a>
+            <span className="shrink-0 text-[11px] text-faint">{f.jurisdiction}</span>
+          </div>
+          {all && <p className="text-[12px] leading-snug text-muted">{f.summary}</p>}
         </div>
+      ))}
+      {firms.length > 1 && (
+        <button onClick={() => setAll((v) => !v)} className="mt-1 text-[12px] font-medium text-muted underline decoration-rule underline-offset-2 hover:text-ink">
+          {all ? "Show one" : `${firms.length - 1} more`}
+        </button>
       )}
-      {!DIRECTORY && <p className="mt-2 text-[12px] text-faint">Firm list loading from research.</p>}
     </li>
   );
 }
