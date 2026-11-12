@@ -1,462 +1,169 @@
 {
-  "id": "pk-allsop-8585b2be-4-d6",
-  "seed": {
-    "id": "allsop-8585b2be",
-    "name": "52 High Beech Road, Luton, Bedfordshire, LU3 3DD",
-    "address": {
-      "value": "52 High Beech Road, Luton, Bedfordshire, LU3 3DD",
-      "source": {
-        "kind": "auction",
-        "file": "auction-results.csv",
-        "row": 10,
-        "record_id": "allsop-8585b2be",
-        "url": "https://www.allsop.co.uk/api/lot/7358df32-52d2-11f1-9f0e-0242ac110002",
-        "label": "Address (allsop lot R260625 086, row 10)",
-        "excerpt": "address=52 High Beech Road, Luton, Bedfordshire, LU3 3DD"
-      }
-    },
-    "postcode": {
-      "value": "LU3 3DD",
-      "source": {
-        "kind": "auction",
-        "file": "auction-results.csv",
-        "row": 10,
-        "record_id": "allsop-8585b2be",
-        "url": "https://www.allsop.co.uk/api/lot/7358df32-52d2-11f1-9f0e-0242ac110002",
-        "label": "Postcode (allsop lot R260625 086, row 10)",
-        "excerpt": "postcode=LU3 3DD"
-      }
-    },
-    "postcode_area": "LU",
-    "nation": "england",
-    "use": "residential",
-    "property_type": "residential",
-    "dwellings": 1,
-    "price_gbp": {
-      "value": 260000,
-      "source": {
-        "kind": "auction",
-        "file": "auction-results.csv",
-        "row": 10,
-        "record_id": "allsop-8585b2be",
-        "url": "https://www.allsop.co.uk/api/lot/7358df32-52d2-11f1-9f0e-0242ac110002",
-        "label": "Achieved price (allsop lot R260625 086, row 10)",
-        "excerpt": "achieved_price_gbp=260000.0; auction_date=2026-06-24; result_status=sold"
-      }
-    },
-    "price_kind": "achieved",
-    "rent_pa_gbp": null,
-    "yield_pct": null,
-    "size_sqft": null,
-    "tenure": null,
-    "url": "https://www.allsop.co.uk/api/lot/7358df32-52d2-11f1-9f0e-0242ac110002",
-    "source": {
-      "kind": "auction",
-      "file": "auction-results.csv",
-      "row": 10,
-      "record_id": "allsop-8585b2be",
-      "url": "https://www.allsop.co.uk/api/lot/7358df32-52d2-11f1-9f0e-0242ac110002",
-      "label": "Auction lot R260625 086 (allsop lot R260625 086, row 10)",
-      "excerpt": "address=52 High Beech Road, Luton, Bedfordshire, LU3 3DD; postcode=LU3 3DD; lot_type=residential"
-    }
-  },
+  "id": "pk-allsop-8585b2be-n5-d6",
+  "seed_id": "allsop-8585b2be",
   "items": [
     {
-      "property": {
-        "id": "allsop-8585b2be",
-        "name": "52 High Beech Road, Luton, Bedfordshire, LU3 3DD",
-        "address": {
-          "value": "52 High Beech Road, Luton, Bedfordshire, LU3 3DD",
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 10,
-            "record_id": "allsop-8585b2be",
-            "url": "https://www.allsop.co.uk/api/lot/7358df32-52d2-11f1-9f0e-0242ac110002",
-            "label": "Address (allsop lot R260625 086, row 10)",
-            "excerpt": "address=52 High Beech Road, Luton, Bedfordshire, LU3 3DD"
-          }
-        },
-        "postcode": {
-          "value": "LU3 3DD",
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 10,
-            "record_id": "allsop-8585b2be",
-            "url": "https://www.allsop.co.uk/api/lot/7358df32-52d2-11f1-9f0e-0242ac110002",
-            "label": "Postcode (allsop lot R260625 086, row 10)",
-            "excerpt": "postcode=LU3 3DD"
-          }
-        },
-        "postcode_area": "LU",
-        "nation": "england",
-        "use": "residential",
-        "property_type": "residential",
-        "dwellings": 1,
-        "price_gbp": {
-          "value": 260000,
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 10,
-            "record_id": "allsop-8585b2be",
-            "url": "https://www.allsop.co.uk/api/lot/7358df32-52d2-11f1-9f0e-0242ac110002",
-            "label": "Achieved price (allsop lot R260625 086, row 10)",
-            "excerpt": "achieved_price_gbp=260000.0; auction_date=2026-06-24; result_status=sold"
-          }
-        },
-        "price_kind": "achieved",
-        "rent_pa_gbp": null,
-        "yield_pct": null,
-        "size_sqft": null,
-        "tenure": null,
-        "url": "https://www.allsop.co.uk/api/lot/7358df32-52d2-11f1-9f0e-0242ac110002",
+      "id": "allsop-8585b2be",
+      "address": "52 High Beech Road, Luton, Bedfordshire, LU3 3DD",
+      "postcode": "LU3 3DD",
+      "postcode_area": "LU",
+      "nation": "england",
+      "use": "residential",
+      "property_type": "residential",
+      "tenure": "unknown",
+      "price_gbp": {
+        "value": 260000,
         "source": {
           "kind": "auction",
           "file": "auction-results.csv",
           "row": 10,
           "record_id": "allsop-8585b2be",
           "url": "https://www.allsop.co.uk/api/lot/7358df32-52d2-11f1-9f0e-0242ac110002",
-          "label": "Auction lot R260625 086 (allsop lot R260625 086, row 10)",
-          "excerpt": "address=52 High Beech Road, Luton, Bedfordshire, LU3 3DD; postcode=LU3 3DD; lot_type=residential"
+          "excerpt": "lot_ref=R260625 086; achieved_price_gbp=260000.0; auction_date=2026-06-24; result_status=sold"
         }
       },
-      "score": 0,
-      "match_reason": "Seed property chosen by the user."
+      "price_kind": "achieved",
+      "rent_pa_gbp": null,
+      "yield_pct": null,
+      "size_sqft": null,
+      "dwellings": 1
     },
     {
-      "property": {
-        "id": "allsop-03010668",
-        "name": "118 Edward Road, Christchurch, Dorset, BH23 3EW",
-        "address": {
-          "value": "118 Edward Road, Christchurch, Dorset, BH23 3EW",
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 578,
-            "record_id": "allsop-03010668",
-            "url": "https://www.allsop.co.uk/api/lot/67d4ad4e-5b65-11f1-bfd0-0242ac110002",
-            "label": "Address (allsop lot R260625 210, row 578)",
-            "excerpt": "address=118 Edward Road, Christchurch, Dorset, BH23 3EW"
-          }
-        },
-        "postcode": {
-          "value": "BH23 3EW",
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 578,
-            "record_id": "allsop-03010668",
-            "url": "https://www.allsop.co.uk/api/lot/67d4ad4e-5b65-11f1-bfd0-0242ac110002",
-            "label": "Postcode (allsop lot R260625 210, row 578)",
-            "excerpt": "postcode=BH23 3EW"
-          }
-        },
-        "postcode_area": "BH",
-        "nation": "england",
-        "use": "residential",
-        "property_type": "residential",
-        "dwellings": 1,
-        "price_gbp": {
-          "value": 260000,
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 578,
-            "record_id": "allsop-03010668",
-            "url": "https://www.allsop.co.uk/api/lot/67d4ad4e-5b65-11f1-bfd0-0242ac110002",
-            "label": "Achieved price (allsop lot R260625 210, row 578)",
-            "excerpt": "achieved_price_gbp=260000.0; auction_date=2026-06-24; result_status=sold"
-          }
-        },
-        "price_kind": "achieved",
-        "rent_pa_gbp": null,
-        "yield_pct": null,
-        "size_sqft": null,
-        "tenure": null,
-        "url": "https://www.allsop.co.uk/api/lot/67d4ad4e-5b65-11f1-bfd0-0242ac110002",
+      "id": "allsop-03010668",
+      "address": "118 Edward Road, Christchurch, Dorset, BH23 3EW",
+      "postcode": "BH23 3EW",
+      "postcode_area": "BH",
+      "nation": "england",
+      "use": "residential",
+      "property_type": "residential",
+      "tenure": "unknown",
+      "price_gbp": {
+        "value": 260000,
         "source": {
           "kind": "auction",
           "file": "auction-results.csv",
           "row": 578,
           "record_id": "allsop-03010668",
           "url": "https://www.allsop.co.uk/api/lot/67d4ad4e-5b65-11f1-bfd0-0242ac110002",
-          "label": "Auction lot R260625 210 (allsop lot R260625 210, row 578)",
-          "excerpt": "address=118 Edward Road, Christchurch, Dorset, BH23 3EW; postcode=BH23 3EW; lot_type=residential"
+          "excerpt": "lot_ref=R260625 210; achieved_price_gbp=260000.0; auction_date=2026-06-24; result_status=sold"
         }
       },
-      "score": 3,
-      "match_reason": "Matched on same use (residential) and nation (england), same type (residential), achieved £260,000 within ±40% of seed."
+      "price_kind": "achieved",
+      "rent_pa_gbp": null,
+      "yield_pct": null,
+      "size_sqft": null,
+      "dwellings": 1
     },
     {
-      "property": {
-        "id": "allsop-15230945",
-        "name": "11A Ferrers Road, Streatham, London, SW16 6JQ",
-        "address": {
-          "value": "11A Ferrers Road, Streatham, London, SW16 6JQ",
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 381,
-            "record_id": "allsop-15230945",
-            "url": "https://www.allsop.co.uk/api/lot/d0acc408-9afa-11f1-8d2b-0242ac110002",
-            "label": "Address (allsop lot R260917 170, row 381)",
-            "excerpt": "address=11A Ferrers Road, Streatham, London, SW16 6JQ"
-          }
-        },
-        "postcode": {
-          "value": "SW16 6JQ",
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 381,
-            "record_id": "allsop-15230945",
-            "url": "https://www.allsop.co.uk/api/lot/d0acc408-9afa-11f1-8d2b-0242ac110002",
-            "label": "Postcode (allsop lot R260917 170, row 381)",
-            "excerpt": "postcode=SW16 6JQ"
-          }
-        },
-        "postcode_area": "SW",
-        "nation": "england",
-        "use": "residential",
-        "property_type": "residential",
-        "dwellings": 1,
-        "price_gbp": {
-          "value": 260000,
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 381,
-            "record_id": "allsop-15230945",
-            "url": "https://www.allsop.co.uk/api/lot/d0acc408-9afa-11f1-8d2b-0242ac110002",
-            "label": "Achieved price (allsop lot R260917 170, row 381)",
-            "excerpt": "achieved_price_gbp=260000.0; auction_date=2026-09-16; result_status=sold"
-          }
-        },
-        "price_kind": "achieved",
-        "rent_pa_gbp": null,
-        "yield_pct": null,
-        "size_sqft": null,
-        "tenure": null,
-        "url": "https://www.allsop.co.uk/api/lot/d0acc408-9afa-11f1-8d2b-0242ac110002",
+      "id": "allsop-15230945",
+      "address": "11A Ferrers Road, Streatham, London, SW16 6JQ",
+      "postcode": "SW16 6JQ",
+      "postcode_area": "SW",
+      "nation": "england",
+      "use": "residential",
+      "property_type": "residential",
+      "tenure": "unknown",
+      "price_gbp": {
+        "value": 260000,
         "source": {
           "kind": "auction",
           "file": "auction-results.csv",
           "row": 381,
           "record_id": "allsop-15230945",
           "url": "https://www.allsop.co.uk/api/lot/d0acc408-9afa-11f1-8d2b-0242ac110002",
-          "label": "Auction lot R260917 170 (allsop lot R260917 170, row 381)",
-          "excerpt": "address=11A Ferrers Road, Streatham, London, SW16 6JQ; postcode=SW16 6JQ; lot_type=residential"
+          "excerpt": "lot_ref=R260917 170; achieved_price_gbp=260000.0; auction_date=2026-09-16; result_status=sold"
         }
       },
-      "score": 3,
-      "match_reason": "Matched on same use (residential) and nation (england), same type (residential), achieved £260,000 within ±40% of seed."
+      "price_kind": "achieved",
+      "rent_pa_gbp": null,
+      "yield_pct": null,
+      "size_sqft": null,
+      "dwellings": 1
     },
     {
-      "property": {
-        "id": "allsop-76bca84a",
-        "name": "Flat A, 16 Bertie Road, Willesden, London, NW10 2LH",
-        "address": {
-          "value": "Flat A, 16 Bertie Road, Willesden, London, NW10 2LH",
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 329,
-            "record_id": "allsop-76bca84a",
-            "url": "https://www.allsop.co.uk/api/lot/a30ce85e-b8d5-11f1-99f0-0242ac110002",
-            "label": "Address (allsop lot R261022 219, row 329)",
-            "excerpt": "address=Flat A, 16 Bertie Road, Willesden, London, NW10 2LH"
-          }
-        },
-        "postcode": {
-          "value": "NW10 2LH",
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 329,
-            "record_id": "allsop-76bca84a",
-            "url": "https://www.allsop.co.uk/api/lot/a30ce85e-b8d5-11f1-99f0-0242ac110002",
-            "label": "Postcode (allsop lot R261022 219, row 329)",
-            "excerpt": "postcode=NW10 2LH"
-          }
-        },
-        "postcode_area": "NW",
-        "nation": "england",
-        "use": "residential",
-        "property_type": "residential",
-        "dwellings": 1,
-        "price_gbp": {
-          "value": 260000,
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 329,
-            "record_id": "allsop-76bca84a",
-            "url": "https://www.allsop.co.uk/api/lot/a30ce85e-b8d5-11f1-99f0-0242ac110002",
-            "label": "Achieved price (allsop lot R261022 219, row 329)",
-            "excerpt": "achieved_price_gbp=260000.0; auction_date=2026-10-21; result_status=sold"
-          }
-        },
-        "price_kind": "achieved",
-        "rent_pa_gbp": null,
-        "yield_pct": null,
-        "size_sqft": null,
-        "tenure": null,
-        "url": "https://www.allsop.co.uk/api/lot/a30ce85e-b8d5-11f1-99f0-0242ac110002",
+      "id": "allsop-76bca84a",
+      "address": "Flat A, 16 Bertie Road, Willesden, London, NW10 2LH",
+      "postcode": "NW10 2LH",
+      "postcode_area": "NW",
+      "nation": "england",
+      "use": "residential",
+      "property_type": "residential",
+      "tenure": "unknown",
+      "price_gbp": {
+        "value": 260000,
         "source": {
           "kind": "auction",
           "file": "auction-results.csv",
           "row": 329,
           "record_id": "allsop-76bca84a",
           "url": "https://www.allsop.co.uk/api/lot/a30ce85e-b8d5-11f1-99f0-0242ac110002",
-          "label": "Auction lot R261022 219 (allsop lot R261022 219, row 329)",
-          "excerpt": "address=Flat A, 16 Bertie Road, Willesden, London, NW10 2LH; postcode=NW10 2LH; lot_type=residential"
+          "excerpt": "lot_ref=R261022 219; achieved_price_gbp=260000.0; auction_date=2026-10-21; result_status=sold"
         }
       },
-      "score": 3,
-      "match_reason": "Matched on same use (residential) and nation (england), same type (residential), achieved £260,000 within ±40% of seed."
+      "price_kind": "achieved",
+      "rent_pa_gbp": null,
+      "yield_pct": null,
+      "size_sqft": null,
+      "dwellings": 1
     },
     {
-      "property": {
-        "id": "allsop-fdc234bc",
-        "name": "12 Jennett Road, Croydon, Surrey, CR0 4NR",
-        "address": {
-          "value": "12 Jennett Road, Croydon, Surrey, CR0 4NR",
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 683,
-            "record_id": "allsop-fdc234bc",
-            "url": "https://www.allsop.co.uk/api/lot/3204d24a-f22c-11f0-a479-0242ac110002",
-            "label": "Address (allsop lot R260225 131, row 683)",
-            "excerpt": "address=12 Jennett Road, Croydon, Surrey, CR0 4NR"
-          }
-        },
-        "postcode": {
-          "value": "CR0 4NR",
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 683,
-            "record_id": "allsop-fdc234bc",
-            "url": "https://www.allsop.co.uk/api/lot/3204d24a-f22c-11f0-a479-0242ac110002",
-            "label": "Postcode (allsop lot R260225 131, row 683)",
-            "excerpt": "postcode=CR0 4NR"
-          }
-        },
-        "postcode_area": "CR",
-        "nation": "england",
-        "use": "residential",
-        "property_type": "residential",
-        "dwellings": 1,
-        "price_gbp": {
-          "value": 262000,
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 683,
-            "record_id": "allsop-fdc234bc",
-            "url": "https://www.allsop.co.uk/api/lot/3204d24a-f22c-11f0-a479-0242ac110002",
-            "label": "Achieved price (allsop lot R260225 131, row 683)",
-            "excerpt": "achieved_price_gbp=262000.0; auction_date=2026-02-26; result_status=sold"
-          }
-        },
-        "price_kind": "achieved",
-        "rent_pa_gbp": null,
-        "yield_pct": null,
-        "size_sqft": null,
-        "tenure": null,
-        "url": "https://www.allsop.co.uk/api/lot/3204d24a-f22c-11f0-a479-0242ac110002",
+      "id": "allsop-fdc234bc",
+      "address": "12 Jennett Road, Croydon, Surrey, CR0 4NR",
+      "postcode": "CR0 4NR",
+      "postcode_area": "CR",
+      "nation": "england",
+      "use": "residential",
+      "property_type": "residential",
+      "tenure": "unknown",
+      "price_gbp": {
+        "value": 262000,
         "source": {
           "kind": "auction",
           "file": "auction-results.csv",
           "row": 683,
           "record_id": "allsop-fdc234bc",
           "url": "https://www.allsop.co.uk/api/lot/3204d24a-f22c-11f0-a479-0242ac110002",
-          "label": "Auction lot R260225 131 (allsop lot R260225 131, row 683)",
-          "excerpt": "address=12 Jennett Road, Croydon, Surrey, CR0 4NR; postcode=CR0 4NR; lot_type=residential"
+          "excerpt": "lot_ref=R260225 131; achieved_price_gbp=262000.0; auction_date=2026-02-26; result_status=sold"
         }
       },
-      "score": 3,
-      "match_reason": "Matched on same use (residential) and nation (england), same type (residential), achieved £262,000 within ±40% of seed."
+      "price_kind": "achieved",
+      "rent_pa_gbp": null,
+      "yield_pct": null,
+      "size_sqft": null,
+      "dwellings": 1
     },
     {
-      "property": {
-        "id": "allsop-1646e569",
-        "name": "60-64 Collingdon Street, Luton, Bedfordshire, LU1 1RX",
-        "address": {
-          "value": "60-64 Collingdon Street, Luton, Bedfordshire, LU1 1RX",
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 367,
-            "record_id": "allsop-1646e569",
-            "url": "https://www.allsop.co.uk/api/lot/f9f71470-fe02-11f0-8df0-0242ac110002",
-            "label": "Address (allsop lot R260225 242, row 367)",
-            "excerpt": "address=60-64 Collingdon Street, Luton, Bedfordshire, LU1 1RX"
-          }
-        },
-        "postcode": {
-          "value": "LU1 1RX",
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 367,
-            "record_id": "allsop-1646e569",
-            "url": "https://www.allsop.co.uk/api/lot/f9f71470-fe02-11f0-8df0-0242ac110002",
-            "label": "Postcode (allsop lot R260225 242, row 367)",
-            "excerpt": "postcode=LU1 1RX"
-          }
-        },
-        "postcode_area": "LU",
-        "nation": "england",
-        "use": "residential",
-        "property_type": "residential",
-        "dwellings": 1,
-        "price_gbp": {
-          "value": 880000,
-          "source": {
-            "kind": "auction",
-            "file": "auction-results.csv",
-            "row": 367,
-            "record_id": "allsop-1646e569",
-            "url": "https://www.allsop.co.uk/api/lot/f9f71470-fe02-11f0-8df0-0242ac110002",
-            "label": "Achieved price (allsop lot R260225 242, row 367)",
-            "excerpt": "achieved_price_gbp=880000.0; auction_date=2026-02-26; result_status=sold"
-          }
-        },
-        "price_kind": "achieved",
-        "rent_pa_gbp": null,
-        "yield_pct": null,
-        "size_sqft": null,
-        "tenure": null,
-        "url": "https://www.allsop.co.uk/api/lot/f9f71470-fe02-11f0-8df0-0242ac110002",
+      "id": "allsop-20f5274a",
+      "address": "31a Radford Road, Hither Green, London, SE13 6SB",
+      "postcode": "SE13 6SB",
+      "postcode_area": "SE",
+      "nation": "england",
+      "use": "residential",
+      "property_type": "residential",
+      "tenure": "unknown",
+      "price_gbp": {
+        "value": 257500,
         "source": {
           "kind": "auction",
           "file": "auction-results.csv",
-          "row": 367,
-          "record_id": "allsop-1646e569",
-          "url": "https://www.allsop.co.uk/api/lot/f9f71470-fe02-11f0-8df0-0242ac110002",
-          "label": "Auction lot R260225 242 (allsop lot R260225 242, row 367)",
-          "excerpt": "address=60-64 Collingdon Street, Luton, Bedfordshire, LU1 1RX; postcode=LU1 1RX; lot_type=residential"
+          "row": 442,
+          "record_id": "allsop-20f5274a",
+          "url": "https://www.allsop.co.uk/api/lot/50b53766-9afb-11f1-b659-0242ac110002",
+          "excerpt": "lot_ref=R260917 172; achieved_price_gbp=257500.0; auction_date=2026-09-15; result_status=sold"
         }
       },
-      "score": 6,
-      "match_reason": "Added residential lot to reach 6 dwellings for the 6+ homes test."
+      "price_kind": "achieved",
+      "rent_pa_gbp": null,
+      "yield_pct": null,
+      "size_sqft": null,
+      "dwellings": 1
     }
   ],
   "totals": {
-    "price_gbp": 2182000,
-    "rent_pa_gbp": null,
+    "price_gbp": 1559500,
+    "rent_pa_gbp": 0,
     "blended_yield_pct": null,
     "dwellings": 6
   },
-  "criteria": {
-    "use": "residential",
-    "nation": "england",
-    "price_band_pct": 40,
-    "n": 4,
-    "min_dwellings": 6
-  }
+  "match_reason": "5 lots matched to allsop-8585b2be on residential use in england, priced within ±40% of £260,000, plus 1 residential lot added to reach 6 dwellings."
 }

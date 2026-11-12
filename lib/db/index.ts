@@ -3,14 +3,9 @@
  * otherwise falls back to an in-memory index built from data/raw/*.csv (offline / DEMO_MODE).
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Property, Use } from "@/lib/mapping/types";
+import type { Property, PropertiesQuery } from "@/contracts";
 import { readRawCsvs } from "./csv";
 
-export interface PropertyQuery {
-  use?: Use;
-  q?: string;
-  limit?: number;
-}
 
 let client: SupabaseClient | null | undefined;
 export function supabase(admin = false): SupabaseClient | null {
@@ -40,18 +35,17 @@ export function toDbRow(p: Property) {
     nation: p.nation,
     postcode_area: p.postcode_area,
     property_type: p.property_type,
-    address: p.address.value,
-    postcode: p.postcode?.value ?? null,
+    address: p.address,
+    postcode: p.postcode || null,
     price_gbp: p.price_gbp,
     rent_pa_gbp: p.rent_pa_gbp,
     yield_pct: p.yield_pct,
-    source_kind: p.source.kind,
-    source_file: p.source.file ?? null,
+    source_file: p.price_gbp?.source.file ?? p.rent_pa_gbp?.source.file ?? null,
     data: p,
   };
 }
 
-export async function listProperties(query: PropertyQuery = {}): Promise<Property[]> {
+export async function listProperties(query: PropertiesQuery = {}): Promise<Property[]> {
   const limit = Math.min(Math.max(query.limit ?? 50, 1), 500);
   const q = query.q?.trim();
   if (useSupabase()) {
@@ -67,7 +61,7 @@ export async function listProperties(query: PropertyQuery = {}): Promise<Propert
   }
   const needle = q?.toLowerCase();
   return memoryStore()
-    .filter((p) => (!query.use || p.use === query.use) && (!needle || p.address.value.toLowerCase().includes(needle) || (p.postcode?.value ?? "").toLowerCase().includes(needle)))
+    .filter((p) => (!query.use || p.use === query.use) && (!needle || p.address.toLowerCase().includes(needle) || p.postcode.toLowerCase().includes(needle)))
     .slice(0, limit);
 }
 

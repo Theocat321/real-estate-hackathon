@@ -15,7 +15,7 @@ Files:
   },
   "by_property_type_top20": {
     "house": 2347,
-    "(none)": 1362,
+    "unknown": 1362,
     "residential": 948,
     "flat": 859,
     "office": 762,
@@ -41,9 +41,20 @@ Files:
     "ni": 113,
     "wales": 78
   },
-  "by_source_file": {
-    "listings.csv": 7251,
-    "auction-results.csv": 2175
+  "by_source": {
+    "btg": 1681,
+    "bondwolfe": 1678,
+    "auctionhouse": 1617,
+    "lsh": 1194,
+    "allsop": 910,
+    "struttparker": 898,
+    "carterjonas": 734,
+    "pugh": 361,
+    "cliveemson": 174,
+    "bidwells": 56,
+    "acuitus": 52,
+    "savills": 43,
+    "savillsauc": 28
   },
   "with_price": 8120,
   "with_rent": 1131,
@@ -54,6 +65,6 @@ Files:
 Notes
 - `price_basis` values seen: guide/asking 5746, rent pa 873, rent psf 415, pa 166, guide (auction) 51. All "rent*"/"pa" rows (or sale_or_let=let) map to `rent_pa_gbp`; psf × size_sqft when size known.
 - "guide/asking" → `price_kind` guide for auction-house sources, asking otherwise.
-- 1316 auction lots (bondwolfe, btg) have blank `lot_type`; type inferred only from Flat/Apartment/Maisonette in address, else null → excluded from match pools.
-- Land/site/garage/ground-rent residential lots get `dwellings` = 0.
+- 1316 auction lots (bondwolfe, btg) have blank `lot_type`; type inferred only from Flat/Apartment/Maisonette in address, else `property_type` "unknown" → excluded from match pools.
+- Residential land/site/garage/ground-rent lots keep `dwellings` = 1 (contract) but are excluded from match pools.
 - Scotland 198, Wales 78: kept in DB, skipped by /api/match (LBTT/LTT not priced in v1).

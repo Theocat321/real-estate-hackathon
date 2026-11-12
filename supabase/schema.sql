@@ -13,7 +13,6 @@ create table if not exists properties (
   price_gbp      jsonb,   -- Sourced<number> {value, source}
   rent_pa_gbp    jsonb,   -- Sourced<number>
   yield_pct      jsonb,   -- Sourced<number>
-  source_kind    text not null,
   source_file    text,
   data           jsonb not null,  -- full Property
   updated_at     timestamptz not null default now()

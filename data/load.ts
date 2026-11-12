@@ -5,7 +5,7 @@
  */
 import { readRawCsvs, RAW_DIR } from "../lib/db/csv";
 import { supabase, toDbRow } from "../lib/db";
-import type { Property } from "../lib/mapping/types";
+import type { Property } from "../contracts";
 
 function countBy(ps: Property[], key: (p: Property) => string | null, top?: number) {
   const m = new Map<string, number>();
@@ -32,7 +32,7 @@ async function main() {
     by_use: countBy(properties, (p) => p.use),
     by_property_type_top20: countBy(properties, (p) => p.property_type, 20),
     by_nation: countBy(properties, (p) => p.nation),
-    by_source_file: countBy(properties, (p) => p.source.file ?? null),
+    by_source: countBy(properties, (p) => p.id.split("-")[0]),
     with_price: properties.filter((p) => p.price_gbp).length,
     with_rent: properties.filter((p) => p.rent_pa_gbp).length,
     with_yield: properties.filter((p) => p.yield_pct).length,

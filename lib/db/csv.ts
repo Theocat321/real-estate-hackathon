@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import Papa from "papaparse";
 import { rowKind, rowToProperty, type CsvRow } from "@/lib/mapping";
-import type { Property } from "@/lib/mapping/types";
+import type { Property } from "@/contracts";
 
 export const RAW_DIR = path.join(process.cwd(), "data", "raw");
 

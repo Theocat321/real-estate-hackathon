@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   const sp = Object.fromEntries(new URL(req.url).searchParams);
   for (const k of Object.keys(sp)) if (sp[k] === "") delete sp[k];
   const parsed = Query.safeParse(sp);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") }, { status: 400 });
   try {
     return NextResponse.json(await listProperties(parsed.data));
   } catch (e) {
