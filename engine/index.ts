@@ -89,6 +89,23 @@ export function rentPayers(s: Structure, nodeId: string, share = 1, seen = new S
   return [{ node, share }];
 }
 
+const isCorpNode = (n: StructNode) => n.kind === "company" || n.investor_type === "uk_company";
+
+/**
+ * Other companies associated with a company for corporation tax limits: those that control it (edge over 50%),
+ * those it controls, and those controlled by anything that controls it. Each counted once.
+ */
+export function associatedCompanies(s: Structure, nodeId: string): number {
+  const controls = (a: string, b: string) => s.edges.some((e) => e.from === a && e.to === b && e.pct > 50);
+  const controllers = s.nodes.filter((n) => n.id !== nodeId && controls(n.id, nodeId));
+  const found = new Set<string>();
+  for (const n of s.nodes) {
+    if (n.id === nodeId || !isCorpNode(n)) continue;
+    if (controls(n.id, nodeId) || controls(nodeId, n.id) || controllers.some((c) => controls(c.id, n.id))) found.add(n.id);
+  }
+  return found.size;
+}
+
 const isNonUkNode = (n: StructNode) => n.investor_type === "family_office_nonuk" || (n.jurisdiction !== undefined && n.jurisdiction !== "UK");
 
 /**
@@ -287,8 +304,10 @@ export function runEngine(input: ScenarioInput): EngineResult {
           row("hold", "INCOME_TAX_RENT", node.id, t.amount, `${node.label}${of}, income tax on £${fmt(rent)} rent less 25% costs: ${t.formula}${nrl}`, inputs, INCOME_TAX_RULE);
           continue;
         }
-        const t = corpTax(part);
-        row("hold", "CORP_TAX_RENT", node.id, t.amount, `${node.label}${of}, on £${fmt(rent)} rent less 25% costs: ${t.formula}`, inputs, CORP_TAX_RULE);
+        const assoc = associatedCompanies(s, node.id);
+        const t = corpTax(part, assoc);
+        const ctInputs = assoc > 0 ? [...inputs, { label: "Associated companies", value: assoc, source: structureSource(opt, `companies controlled with ${node.id}`) }] : inputs;
+        row("hold", "CORP_TAX_RENT", node.id, t.amount, `${node.label}${of}, on £${fmt(rent)} rent less 25% costs: ${t.formula}`, ctInputs, CORP_TAX_RULE);
         // Profits paid out: what is left after corporation tax goes to the company's owners as dividends.
         if (distribute) {
           const paidOut = part - t.amount;

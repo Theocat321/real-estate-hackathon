@@ -388,7 +388,7 @@ describe("real investors in A, B and D", () => {
     const p = structuredClone(sample.packet) as Packet;
     const t = runEngine({ packet: p, investors: [], structures: buildStructureTemplates(p, []) }).totals;
     expect(t.A).toEqual({ acquire: 49_250, hold: 14_401 });
-    expect(t.B).toEqual({ acquire: 49_250, hold: 14_401, exit: 7_025 });
+    expect(t.B).toEqual({ acquire: 49_250, hold: 16_276, exit: 7_025 });
     expect(t.D).toEqual({ acquire: 265_250, hold: 14_401, exit: 7_025, ten_year: 64_800, death: 432_000 });
   });
 });
@@ -470,6 +470,31 @@ describe("tax on rent by who receives it", () => {
     const items = [resProperty("x", 0, { price_gbp: null })];
     const r = runEngine({ packet: packetOf(items), investors: inv, structures: buildStructureTemplates(packetOf(items), inv), assumptions: { distribute_profits: true } });
     expect(r.rows.some((x) => x.tax === "INCOME_TAX_RENT" || x.tax === "DIVIDEND_TAX")).toBe(false);
+  });
+
+  it("associated companies halve the corporation tax limits", async () => {
+    const { corpTax } = await import("../rules/corp_tax");
+    const t = corpTax(60_000, 1);
+    expect(t.amount).toBe(14_025);
+    expect(t.formula).toContain("limits shared with 1 associated company");
+    expect(corpTax(60_000, 2).formula).toContain("2 associated companies");
+    expect(corpTax(60_000).formula).not.toContain("associated");
+  });
+
+  it("associated: a uk_company investor owning PropCo gives 1 associated company on the PropCo row", () => {
+    const items = [resProperty("x", 500_000)];
+    const inv: Investor[] = [{ type: "uk_company", label: "Holdco", pct: 100 }];
+    const r = runEngine({ packet: packetOf(items), investors: inv, structures: [buildB(packetOf(items), inv)] });
+    const row = r.rows.find((x) => x.tax === "CORP_TAX_RENT")!;
+    expect(row.formula).toContain("limits shared with 1 associated company");
+    expect(row.inputs.find((i) => i.label === "Associated companies")).toMatchObject({ value: 1 });
+  });
+
+  it("associated: a pension owning PropCo gives no associated companies", () => {
+    const items = [resProperty("x", 500_000)];
+    const inv: Investor[] = [{ type: "uk_pension", label: "Pension", pct: 100 }];
+    const r = runEngine({ packet: packetOf(items), investors: inv, structures: [buildB(packetOf(items), inv)] });
+    expect(r.rows.some((x) => x.formula.includes("associated"))).toBe(false);
   });
 
   const run = (items: Property[], inv: Investor[]) => runEngine({ packet: packetOf(items), investors: inv, structures: [buildA(packetOf(items), inv)] });
