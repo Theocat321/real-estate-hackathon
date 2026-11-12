@@ -2,7 +2,7 @@
 
 /*
  * Structure Studio — "title plan" palette.
- * Survey-paper ground, registry ink, and HM Land Registry red edging
+ * Survey-paper ground, registry ink, and blueprint-blue edging
  * reserved for the seed property, the cheapest option and focus.
  */
 @theme {
@@ -14,8 +14,8 @@
   --color-faint: #8d9c97;
   --color-rule: #cdd5d0;
   --color-rule-soft: #e2e7e3;
-  --color-edge: #b8202f;
-  --color-edge-soft: #f6e3e4;
+  --color-edge: #1f5a8a;
+  --color-edge-soft: #e1ebf3;
   --color-sage: #5e8a7c;
   --color-sage-soft: #e3ece8;
   --color-review: #8a5a00;
@@ -54,7 +54,7 @@ body {
   font-variation-settings: "wdth" 82;
 }
 
-/* Title-plan red edging: the one loud device in the UI. */
+/* Blueprint-blue edging: the one loud device in the UI. */
 .edged {
   box-shadow: inset 0 0 0 2px var(--color-edge);
 }

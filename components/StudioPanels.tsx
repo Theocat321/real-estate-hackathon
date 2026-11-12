@@ -17,13 +17,12 @@ const STAGE_COLOR: Record<Stage, string> = {
   acquire: "#17262a",
   hold: "#5e8a7c",
   exit: "#9fb8ae",
-  ten_year: "#b8202f",
+  ten_year: "#1f5a8a",
   death: "#cdd5d0",
 };
 
-const k = (v: number) => (Math.abs(v) >= 1000 ? `${v < 0 ? "−" : ""}£${Math.round(Math.abs(v) / 1000)}k` : `${v < 0 ? "−" : ""}£${Math.abs(v)}`);
 
-const PART_COLOR = { purchase: "#17262a", yearly: "#5e8a7c", tenYear: "#9fb8ae", death: "#b8202f", sale: "#c9a227" } as const;
+const PART_COLOR = { purchase: "#17262a", yearly: "#5e8a7c", tenYear: "#9fb8ae", death: "#1f5a8a", sale: "#c9a227" } as const;
 const PART_LABEL = {
   purchase: "On purchase",
   yearly: "Yearly charges",
@@ -60,7 +59,7 @@ export function TotalsChart({ result, horizon, family, assume = DEFAULT_ASSUMPTI
           <BarChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="28%" stackOffset="sign">
             <CartesianGrid vertical={false} stroke="#e2e7e3" />
             <XAxis dataKey="option" tick={{ fontSize: 12, fill: "#17262a", fontWeight: 600 }} axisLine={{ stroke: "#cdd5d0" }} tickLine={false} />
-            <YAxis tickFormatter={k} tick={{ fontSize: 11, fill: "#5e6f6b" }} axisLine={false} tickLine={false} width={44} />
+            <YAxis tickFormatter={compact} tick={{ fontSize: 11, fill: "#5e6f6b" }} axisLine={false} tickLine={false} width={44} />
             {parts.includes("sale") && <ReferenceLine y={0} stroke="#17262a" />}
             <Tooltip
               formatter={(v, name) => [gbp(Number(v)), name]}
@@ -100,50 +99,70 @@ export function TotalsTable({
   const parts = PARTS.filter((p) => options.some((o) => b[o][p] !== 0));
   const short: Record<Part, string> = { purchase: "Purchase", yearly: "Yearly", tenYear: "10-year", death: "Death", sale: "Sale" };
   return (
-    <table className="w-full text-[13px]">
-      <thead>
-        <tr className="text-left text-[11px] text-muted">
-          <th className="pb-1.5 font-medium">Option</th>
-          {parts.map((p) => (
-            <th key={p} className="pb-1.5 text-right font-medium">
-              {short[p]}
-            </th>
-          ))}
-          <th className="pb-1.5 text-right font-semibold text-ink">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {options.map((o) => (
-          <tr key={o} className="border-t border-rule-soft">
-            <td className={`py-1.5 font-bold ${o === best ? "text-edge" : ""}`}>
-              {onPick ? (
-                <button onClick={() => onPick(o)} className="rounded px-1 hover:bg-paper" aria-label={`Show option ${o}`}>
-                  {o}
-                </button>
-              ) : (
-                o
-              )}
-            </td>
+    <div className="-mx-1 overflow-x-auto">
+      <table className="w-full border-separate border-spacing-0 whitespace-nowrap text-[13px]">
+        <thead>
+          <tr className="text-[11px] uppercase tracking-wide text-muted">
+            <th className="px-1 pb-2 text-left font-medium">Option</th>
             {parts.map((p) => (
-              <td key={p} className="text-right">
-                {b[o][p] === 0 ? (
-                  <span className="text-faint">—</span>
-                ) : (
-                  <CostMoney
-                    title={`Option ${o}, ${PART_LABEL[p].toLowerCase()}, ${HORIZON_LABEL[horizon].toLowerCase()}`}
-                    rows={b[o].rows[p]}
-                    amount={b[o][p]}
-                    note={p === "sale" ? saleNote(result, o, assume) : undefined}
-                  />
-                )}
-              </td>
+              <th key={p} className="px-2 pb-2 text-right font-medium">
+                {short[p]}
+              </th>
             ))}
-            <td className={`tabular text-right font-semibold ${o === best ? "text-edge" : ""}`}>{gbp(b[o].total)}</td>
+            <th className="px-1 pb-2 text-right font-semibold text-ink">Total</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {options.map((o) => {
+            const isBest = o === best;
+            const cell = `border-t border-rule-soft py-2 ${isBest ? "bg-edge-soft/60" : ""}`;
+            return (
+              <tr key={o}>
+                <td className={`${cell} px-1 font-bold ${isBest ? "text-edge" : ""}`}>
+                  {onPick ? (
+                    <button onClick={() => onPick(o)} className="rounded px-1 hover:bg-paper" aria-label={`Show option ${o}`}>
+                      {o}
+                    </button>
+                  ) : (
+                    o
+                  )}
+                </td>
+                {parts.map((p) => (
+                  <td key={p} className={`${cell} px-2 text-right`}>
+                    {b[o][p] === 0 ? (
+                      <span className="text-faint">–</span>
+                    ) : (
+                      <span title={gbp(b[o][p])} className={b[o][p] < 0 ? "text-sage" : ""}>
+                        <CostMoney
+                          title={`Option ${o}, ${PART_LABEL[p].toLowerCase()}, ${HORIZON_LABEL[horizon].toLowerCase()}`}
+                          rows={b[o].rows[p]}
+                          amount={b[o][p]}
+                          display={compact(b[o][p])}
+                          note={p === "sale" ? saleNote(result, o, assume) : undefined}
+                        />
+                      </span>
+                    )}
+                  </td>
+                ))}
+                <td className={`${cell} tabular px-1 text-right font-semibold ${isBest ? "text-edge" : ""}`} title={gbp(b[o].total)}>
+                  {compact(b[o].total)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
+}
+
+/** £152k / £1.37m, with a true minus sign. Full figure lives in the drawer and tooltip. */
+function compact(v: number): string {
+  const a = Math.abs(v);
+  const sign = v < 0 ? "−" : "";
+  if (a >= 1_000_000) return `${sign}£${parseFloat((a / 1_000_000).toFixed(2))}m`;
+  if (a >= 1000) return `${sign}£${Math.round(a / 1000)}k`;
+  return `${sign}£${Math.round(a)}`;
 }
 
 /** Bar per option: stamp duty the next buyer saves when the packet is sold through it. */
@@ -154,7 +173,7 @@ export function SaleChart({ result, options = OPTIONS }: { result: EngineResult;
       <BarChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="28%">
         <CartesianGrid vertical={false} stroke="#e2e7e3" />
         <XAxis dataKey="option" tick={{ fontSize: 12, fill: "#17262a", fontWeight: 600 }} axisLine={{ stroke: "#cdd5d0" }} tickLine={false} />
-        <YAxis tickFormatter={k} tick={{ fontSize: 11, fill: "#5e6f6b" }} axisLine={false} tickLine={false} width={44} />
+        <YAxis tickFormatter={compact} tick={{ fontSize: 11, fill: "#5e6f6b" }} axisLine={false} tickLine={false} width={44} />
         <Tooltip
           formatter={(v) => [gbp(Number(v)), "Saved on sale"]}
           labelFormatter={(l) => `Option ${l}`}
@@ -222,7 +241,7 @@ export function OptionDTimeline({ result }: { result: EngineResult }) {
   return (
     <div>
       <p className="wide text-[18px] font-bold leading-tight tracking-tight">
-        Pay {k(sum(entry))} now, or {k(sum(death))} later
+        Pay {compact(sum(entry))} now, or {compact(sum(death))} later
       </p>
       <ol className="mt-4 grid grid-cols-3 gap-3">
         {steps.map((s, i) => (
