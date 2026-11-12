@@ -7,6 +7,7 @@ const STEPS = [
   { key: "start", label: "Pick a property" },
   { key: "packet", label: "Review the packet" },
   { key: "studio", label: "Compare structures" },
+  { key: "setup", label: "Set it up" },
 ] as const;
 
 /** Wordmark: a small parcel with red title-plan edging. */
@@ -21,7 +22,7 @@ function Mark() {
 
 export function SiteHeader() {
   const path = usePathname();
-  const current = path.startsWith("/studio") ? 2 : path.startsWith("/packet") ? 1 : 0;
+  const current = path.startsWith("/setup") ? 3 : path.startsWith("/studio") ? 2 : path.startsWith("/packet") ? 1 : 0;
   return (
     <header className="border-b border-rule bg-sheet">
       <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-6 px-6">

@@ -162,7 +162,17 @@ export default function StudioPage() {
                 </header>
                 <div className="min-h-0 flex-1 border-y border-rule-soft">{s && result && <StructureChart structure={s} rows={result.rows} />}</div>
                 <div className="max-h-28 space-y-2 overflow-y-auto px-4 py-2.5">
-                  {s?.rationale && <p className="text-[12px] leading-snug text-ink-soft">{s.rationale}</p>}
+                  <div className="flex items-start gap-3">
+                    {s?.rationale && <p className="flex-1 text-[12px] leading-snug text-ink-soft">{s.rationale}</p>}
+                    <Link
+                      href={`/setup/${encodeURIComponent(packet.id)}/${o}?investor=${preset}`}
+                      className={`shrink-0 rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                        isBest ? "bg-edge text-sheet hover:bg-edge/90" : "border border-ink hover:bg-ink hover:text-sheet"
+                      }`}
+                    >
+                      Set up {o}
+                    </Link>
+                  </div>
                   {result && <FlagList flags={result.flags} option={o} />}
                 </div>
               </section>
