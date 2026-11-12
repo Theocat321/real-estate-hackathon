@@ -86,7 +86,8 @@ describe("structures (templates, not LLM)", () => {
     const d = buildD(samplePacket(), [{ type: "family_office_uk", label: "FO", pct: 70 }, { type: "uk_pension", label: "Pension", pct: 30 }]);
     expect(shape(d).edges).toEqual(["settlor>trust:100", "trust>spv:70", "inv1>spv:30", "spv>p1:100", "spv>p2:100"]);
     const noFamily = buildD(samplePacket(), [{ type: "uk_pension", label: "Pension", pct: 100 }]);
-    expect(shape(noFamily).edges).toEqual(["settlor>trust:100", "trust>spv:100", "inv1>spv:100", "spv>p1:100", "spv>p2:100"]);
+    expect(shape(noFamily).edges).toEqual(["settlor>trust:100", "trust>spv:100", "spv>p1:100", "spv>p2:100"]);
+    expect(noFamily.nodes.some((n) => n.id === "inv1")).toBe(false);
   });
 
   it("Grok writes only rationale; numbers rejected, falls back to template", async () => {

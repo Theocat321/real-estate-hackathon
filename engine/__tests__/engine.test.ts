@@ -355,6 +355,16 @@ describe("real investors in A, B and D", () => {
     expect(flags[0]).toMatchObject({ severity: "review", message: "Investor shares add up to 90%, not 100%." });
   });
 
+  it("D without a family keeps one owner of PropCo and today's D totals", () => {
+    const p = structuredClone(sample.packet) as Packet;
+    const inv: Investor[] = [{ type: "uk_pension", label: "Pension", pct: 60 }, { type: "uk_company", label: "Co", pct: 40 }];
+    const d = buildD(p, inv);
+    expect(d.edges.filter((e) => e.to === "spv").reduce((t, e) => t + e.pct, 0)).toBe(100);
+    const r = runEngine({ packet: p, investors: inv, structures: [d] });
+    expect(r.totals.D).toEqual({ acquire: 265_250, hold: 14_401, exit: 7_025, ten_year: 64_800, death: 432_000 });
+    expect(r.flags.some((f) => f.rule_id === "trust_settlor")).toBe(true);
+  });
+
   it("no investors gives today's totals", () => {
     const p = structuredClone(sample.packet) as Packet;
     const t = runEngine({ packet: p, investors: [], structures: buildStructureTemplates(p, []) }).totals;

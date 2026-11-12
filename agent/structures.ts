@@ -6,7 +6,7 @@
  *
  * Node ids: properties p1..pn (packet order), PropCo "spv", a single (or generic) owner in A/B "buyer",
  * 2+ investors in A/B and C inv1..invk, C "fund" (owns the properties), D "settlor" + "trust"
- * (+ non-family investors inv1..invk owning PropCo beside the trust).
+ * (+ non-family investors inv1..invk owning PropCo beside the trust, only when a family invests).
  */
 import { z } from "zod";
 import type { Investor, InvestorType, OptionId, Packet, Property, StructEdge, StructNode, Structure } from "./contract";
@@ -128,6 +128,7 @@ export function buildC(packet: Packet, investors: Investor[]): Structure {
 /**
  * D: the family (or a generic family) settles the trust (pct 100 = settles, not a share);
  * the trust holds the family's pct of PropCo, every other investor holds its own pct.
+ * Without a family investor, D keeps one owner: generic family -> trust (100) -> PropCo (100).
  */
 export function buildD(packet: Packet, investors: Investor[]): Structure {
   const props = propertyNodes(packet);
@@ -136,7 +137,8 @@ export function buildD(packet: Packet, investors: Investor[]): Structure {
     ? { id: "settlor", kind: "investor", label: `${fo.label} (settlor)`, investor_type: fo.type, jurisdiction: jurisdictionOf(fo.type) }
     : { id: "settlor", kind: "investor", label: "Family (settlor)", investor_type: "family_office_uk", jurisdiction: "UK" };
   const trust: StructNode = { id: "trust", kind: "trust", label: "Discretionary trust", trust_type: "discretionary", jurisdiction: "UK" };
-  const others = investors.filter((i) => i !== fo);
+  // No family: D keeps one owner of PropCo (the generic family trust); D is illustrative (trust_settlor flag).
+  const others = fo ? investors.filter((i) => i !== fo) : [];
   const otherNodes = others.map(investorNode);
   return {
     option: "D",

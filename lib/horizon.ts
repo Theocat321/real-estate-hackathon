@@ -2,7 +2,7 @@
  * Compare options over a holding period, not just on purchase.
  * Built only from engine rows: yearly charges × years, 10-year trust charges per full decade, and,
  * over a lifetime with a family investing, the inheritance tax A, B and C would pay on a death
- * (the engine's IHT_DEATH_COMPARATOR: 40% above the nil-rate band on the packet held personally).
+ * (the engine's IHT_DEATH_COMPARATOR: 40% above the nil-rate band on the family's share of the packet held personally).
  *
  * "On sale" is a separate view (see `saleSaving`): what each option saves when the packet is sold.
  * "25 years, then sell" nets the part of that saving the seller gets back in the price off the 25-year cost.
