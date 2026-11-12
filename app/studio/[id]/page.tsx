@@ -56,32 +56,51 @@ export default function StudioPage() {
     else setError("Packet not found in this session.");
   }, [id]);
 
-  const run = useCallback(async (p: Packet, investors: Investor[], rentalRelief: boolean, distributeProfits: boolean) => {
+  // Structures depend only on the packet and investors; the toggles re-run the engine on the ones already built.
+  // The promise is cached so a toggle during a slow build (Grok rationale) waits for it instead of starting another.
+  const built = useRef<{ packet: Packet; preset: InvestorPreset; structures: Promise<Structure[]> } | null>(null);
+  // Only the latest request may set result, cliffs and loading.
+  const requestId = useRef(0);
+
+  const run = useCallback(async (p: Packet, presetKey: InvestorPreset, a: Pick<Assumptions, "rentalRelief" | "distributeProfits">) => {
+    const id = ++requestId.current;
+    const latest = () => id === requestId.current;
     setLoading(true);
     setError(null);
     try {
-      const { structures } = await buildStructures(p, investors);
-      const scenario = { packet: p, structures, investors, assumptions: { rental_relief: rentalRelief, distribute_profits: distributeProfits } };
+      const investors = INVESTOR_PRESETS[presetKey];
+      if (!built.current || built.current.packet !== p || built.current.preset !== presetKey) {
+        const pending = buildStructures(p, investors).then((r) => r.structures);
+        built.current = { packet: p, preset: presetKey, structures: pending };
+        // A failed build is not kept, so the next run tries again.
+        pending.catch(() => {
+          if (built.current?.structures === pending) built.current = null;
+        });
+      }
+      const structures = await built.current.structures;
+      if (!latest()) return;
+      const scenario = { packet: p, structures, investors, assumptions: toEngineAssumptions(a) };
       const result = await runScenario(scenario);
+      if (!latest()) return;
       setCliffs(null);
-      findCliffs(scenario).then(setCliffs).catch(() => setCliffs([]));
+      findCliffs(scenario)
+        .then((c) => latest() && setCliffs(c))
+        .catch(() => latest() && setCliffs([]));
       setStructures(structures);
       setResult(result);
-      setChangeNote(prev.current && prev.current.preset !== presetRef.current ? describeChange(prev.current, { structures, result }, investors[0]?.label ?? "these investors") : null);
-      prev.current = { preset: presetRef.current, structures, result };
+      setChangeNote(prev.current && prev.current.preset !== presetKey ? describeChange(prev.current, { structures, result }, investors[0]?.label ?? "these investors") : null);
+      prev.current = { preset: presetKey, structures, result };
     } catch (e) {
-      setError((e as Error).message);
+      if (latest()) setError((e as Error).message);
     } finally {
-      setLoading(false);
+      if (latest()) setLoading(false);
     }
   }, []);
 
   const rentalRelief = assume.rentalRelief;
   const distributeProfits = assume.distributeProfits;
-  const presetRef = useRef(preset);
   useEffect(() => {
-    presetRef.current = preset;
-    if (packet) void run(packet, INVESTOR_PRESETS[preset], rentalRelief, distributeProfits);
+    if (packet) void run(packet, preset, { rentalRelief, distributeProfits });
   }, [packet, preset, rentalRelief, distributeProfits, run]);
 
   async function onExport() {
