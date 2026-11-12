@@ -263,3 +263,11 @@ describe("corporation tax on rent", () => {
     expect(rentFor(resProperty("h", 400_000), 400_000)).toMatchObject({ value: 20_000, estimated: true });
   });
 });
+
+describe("contract 1.1.0", () => {
+  it("accepts assumptions in ScenarioInput", () => {
+    const base = { packet: sample.packet, structures: sample.structures, investors: sample.investors };
+    expect(ScenarioInputSchema.safeParse({ ...base, assumptions: { rental_relief: true, distribute_profits: true } }).success).toBe(true);
+    expect(ScenarioInputSchema.safeParse({ ...base, assumptions: { rental_relief: "yes" } }).success).toBe(false);
+  });
+});

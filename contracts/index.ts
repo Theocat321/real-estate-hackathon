@@ -2,7 +2,7 @@
 // OWNED BY THE LEAD. Agents import from here and never edit it.
 // Any change: ask the lead, who bumps CONTRACT_VERSION and tells every agent.
 
-export const CONTRACT_VERSION = "1.0.0";
+export const CONTRACT_VERSION = "1.1.0";
 
 /* ───────────────────────── Provenance ───────────────────────── */
 
@@ -121,6 +121,8 @@ export type TaxCode =
   | "STAMP_DUTY_UNITS"
   | "ATED"
   | "CORP_TAX_RENT"
+  | "DIVIDEND_TAX"
+  | "INCOME_TAX_RENT"
   | "IHT_ENTRY"
   | "IHT_TEN_YEAR"
   | "IHT_DEATH_COMPARATOR";
@@ -151,11 +153,17 @@ export interface Flag {
   citation_url?: string;
 }
 
+export interface Assumptions {
+  rental_relief?: boolean;            // default false
+  distribute_profits?: boolean;       // default false
+}
+
 export interface ScenarioInput {
   packet: Packet;
   structures: Structure[];
   investors: Investor[];
   settlor_nrb_available_gbp?: number; // default 325000
+  assumptions?: Assumptions;          // engine treats absent flags as false
 }
 
 export interface EngineResult {

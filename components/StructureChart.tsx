@@ -26,6 +26,8 @@ const TAX_SHORT: Record<CostRow["tax"], string> = {
   STAMP_DUTY_SHARES: "Stamp duty",
   STAMP_DUTY_UNITS: "Stamp duty on units",
   CORP_TAX_RENT: "Tax on rent p.a.",
+  DIVIDEND_TAX: "Dividend tax p.a.",
+  INCOME_TAX_RENT: "Income tax on rent p.a.",
   ATED: "ATED p.a.",
   IHT_ENTRY: "IHT entry",
   IHT_TEN_YEAR: "IHT 10-yr",

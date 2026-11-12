@@ -68,4 +68,7 @@ export const ScenarioInputSchema: z.ZodType<ScenarioInput> = z.object({
   structures: z.array(StructureSchema).min(1),
   investors: z.array(z.object({ type: InvestorType, label: z.string(), pct: z.number() })),
   settlor_nrb_available_gbp: z.number().int().nonnegative().optional(),
+  assumptions: z
+    .object({ rental_relief: z.boolean().optional(), distribute_profits: z.boolean().optional() })
+    .optional(),
 });
