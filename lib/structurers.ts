@@ -1,5 +1,6 @@
 /** Directory of firms and official registers that can put a structure in place. */
 import type { OptionId } from "@/contracts";
+import data from "@/data/structurers.json";
 import type { RoleId } from "@/lib/setup";
 
 export interface Firm {
@@ -28,5 +29,6 @@ export interface Directory {
   registers: Register[];
 }
 
-// Filled from data/structurers.json once the research pass lands.
-export const DIRECTORY: Directory | null = null;
+
+/** Researched 2026-11-12: each firm checked against its own site, each register fetched. Orientation, not endorsement. */
+export const DIRECTORY: Directory | null = data as unknown as Directory;

@@ -1,0 +1,348 @@
+{
+  "as_of": "2026-11-12",
+  "note": "This directory is for orientation only and is not an endorsement; check each provider's regulation and suitability on the official registers before engaging them.",
+  "roles": {
+    "conveyancer": {
+      "label": "Property solicitor / conveyancer",
+      "why": "Handles the legal transfer of each property, title checks, searches and mortgage paperwork into whichever owner you choose."
+    },
+    "property_tax": {
+      "label": "Property tax adviser",
+      "why": "Works out SDLT, ATED, CGT and corporation tax for the chosen structure and confirms which surcharges and reliefs apply."
+    },
+    "corporate": {
+      "label": "Company formation / corporate solicitor",
+      "why": "Incorporates PropCo Ltd at Companies House with the right SIC code, articles, shareholders and registered office."
+    },
+    "accountant": {
+      "label": "Company accountant",
+      "why": "Prepares PropCo's annual accounts, corporation tax returns and Companies House filings."
+    },
+    "fund_lawyer": {
+      "label": "Fund lawyer (Jersey / UK)",
+      "why": "Drafts and structures the JPUT trust instrument or RIF documents and obtains the Jersey consents or meets the UK RIF conditions."
+    },
+    "fund_admin": {
+      "label": "Fund administrator / trustee",
+      "why": "Acts as the regulated JPUT trustee and administrator, or supports the RIF's operator and depositary, and runs investor records and fund accounts."
+    },
+    "private_client": {
+      "label": "Trusts and inheritance tax solicitor",
+      "why": "Drafts the discretionary trust deed, plans the IHT entry, ten-year and exit charges, and advises the settlor and trustees."
+    },
+    "trustee": {
+      "label": "Trust company / professional trustee",
+      "why": "Acts as or alongside the trustees who own PropCo's shares, keeps the trust compliant and handles HMRC Trust Registration Service filings."
+    }
+  },
+  "options": {
+    "A": ["conveyancer", "property_tax"],
+    "B": ["conveyancer", "property_tax", "corporate", "accountant"],
+    "C": ["conveyancer", "property_tax", "corporate", "accountant", "fund_lawyer", "fund_admin"],
+    "D": ["conveyancer", "property_tax", "corporate", "accountant", "private_client", "trustee"]
+  },
+  "firms": [
+    {
+      "name": "Irwin Mitchell",
+      "roles": ["conveyancer"],
+      "options": ["A", "B", "C", "D"],
+      "jurisdiction": "UK",
+      "url": "https://www.irwinmitchell.com/",
+      "evidence_url": "https://www.irwinmitchell.com/personal/conveyancing/buy-to-let",
+      "summary": "National UK law firm with a residential conveyancing team that handles buy-to-let purchases and remortgages."
+    },
+    {
+      "name": "Mishcon de Reya",
+      "roles": ["conveyancer"],
+      "options": ["A", "B", "C", "D"],
+      "jurisdiction": "UK",
+      "url": "https://www.mishcon.com/",
+      "evidence_url": "https://www.mishcon.com/services/private-real-estate",
+      "summary": "London law firm whose Residential Property Group acts on prime UK residential purchases and sales."
+    },
+    {
+      "name": "Saffery",
+      "roles": ["property_tax", "accountant", "trustee"],
+      "options": ["A", "B", "C", "D"],
+      "jurisdiction": "UK",
+      "url": "https://www.saffery.com/",
+      "evidence_url": "https://www.saffery.com/our-services/tax-services/stamp-duty-land-tax-sdlt/",
+      "summary": "UK tax and audit firm advising on SDLT, property holding vehicles and funds; its trusts team can act as co-trustee."
+    },
+    {
+      "name": "RSM UK",
+      "roles": ["property_tax", "accountant"],
+      "options": ["A", "B", "C", "D"],
+      "jurisdiction": "UK",
+      "url": "https://www.rsmuk.com/",
+      "evidence_url": "https://www.rsmuk.com/what-we-offer/services/tax/corporate-tax/property-tax",
+      "summary": "Property tax team advising on ownership structures and SDLT, plus corporation tax, ATED and non-resident landlord returns."
+    },
+    {
+      "name": "Moore Kingston Smith",
+      "roles": ["accountant"],
+      "options": ["B", "C", "D"],
+      "jurisdiction": "UK",
+      "url": "https://mooreks.co.uk/",
+      "evidence_url": "https://mooreks.co.uk/insights/unlocking-property-potential-through-outsourced-accounting/",
+      "summary": "London accountancy firm offering outsourced accounting, tax, VAT and compliance for property investors and developers."
+    },
+    {
+      "name": "1st Formations",
+      "roles": ["corporate"],
+      "options": ["B", "C", "D"],
+      "jurisdiction": "UK",
+      "url": "https://www.1stformations.co.uk/",
+      "evidence_url": "https://www.1stformations.co.uk/",
+      "summary": "Online UK company formation agent and Companies House authorised corporate service provider (ACSP)."
+    },
+    {
+      "name": "Companies MadeSimple",
+      "roles": ["corporate"],
+      "options": ["B", "C", "D"],
+      "jurisdiction": "UK",
+      "url": "https://www.companiesmadesimple.com/",
+      "evidence_url": "https://www.companiesmadesimple.com/",
+      "summary": "Online UK limited company formation service and Companies House authorised agent (ACSP)."
+    },
+    {
+      "name": "Ogier",
+      "roles": ["fund_lawyer"],
+      "options": ["C"],
+      "jurisdiction": "Jersey",
+      "url": "https://www.ogier.com/",
+      "evidence_url": "https://www.ogier.com/news-and-insights/insights/a-guide-to-jersey-property-unit-trusts/",
+      "summary": "Offshore law firm in Jersey that advises on setting up JPUTs, including the Jersey regulatory consents."
+    },
+    {
+      "name": "Mourant",
+      "roles": ["fund_lawyer"],
+      "options": ["C"],
+      "jurisdiction": "Jersey",
+      "url": "https://www.mourant.com/",
+      "evidence_url": "https://www.mourant.com/guides/a-guide-to-jputs-jersey-property-unit-trusts/",
+      "summary": "Offshore law firm in Jersey that publishes a JPUT guide (updated 2026) covering JPUT structuring for UK real estate."
+    },
+    {
+      "name": "Walkers",
+      "roles": ["fund_lawyer"],
+      "options": ["C"],
+      "jurisdiction": "Jersey",
+      "url": "https://www.walkersglobal.com/",
+      "evidence_url": "https://www.walkersglobal.com/en/Insights/2026/06/A-guide-to-Jersey-property-unit-trusts",
+      "summary": "Offshore law firm with a Jersey office that published a June 2026 guide to JPUTs for UK real estate."
+    },
+    {
+      "name": "Macfarlanes",
+      "roles": ["fund_lawyer"],
+      "options": ["C"],
+      "jurisdiction": "UK",
+      "url": "https://www.macfarlanes.com/",
+      "evidence_url": "https://www.macfarlanes.com/insights/102kd47/reserved-investor-fund-rif/",
+      "summary": "London law firm with funds and real estate tax teams; published guidance on the UK Reserved Investor Fund (RIF)."
+    },
+    {
+      "name": "Trowers & Hamlins",
+      "roles": ["fund_lawyer"],
+      "options": ["C"],
+      "jurisdiction": "UK",
+      "url": "https://www.trowers.com/",
+      "evidence_url": "https://www.trowers.com/news/2026/august/trowers-advises-on-launch-of-uks-first-reserved-investor-fund-supporting-affordable-housing",
+      "summary": "UK law firm that advised investors on the launch of the first UK Reserved Investor Fund (August 2026)."
+    },
+    {
+      "name": "CMS",
+      "roles": ["fund_lawyer"],
+      "options": ["C"],
+      "jurisdiction": "UK",
+      "url": "https://cms.law/en/gbr/",
+      "evidence_url": "https://cms.law/en/gbr/publication/uk-reserved-investor-fund-rif-what-do-i-need-to-know",
+      "summary": "International law firm whose UK funds team publishes on and advises on the Reserved Investor Fund."
+    },
+    {
+      "name": "Goodwin",
+      "roles": ["fund_lawyer"],
+      "options": ["C"],
+      "jurisdiction": "UK",
+      "url": "https://www.goodwinlaw.com/",
+      "evidence_url": "https://www.goodwinlaw.com/en/insights/publications/2025/03/alerts-realestate-pif-a-new-uk-based-unauthorised-fund-vehicle",
+      "summary": "International law firm whose London real estate funds team covers the RIF's structure and UK-property-rich tax rules."
+    },
+    {
+      "name": "JTC",
+      "roles": ["fund_admin", "trustee"],
+      "options": ["C", "D"],
+      "jurisdiction": "Jersey",
+      "url": "https://www.jtcgroup.com/",
+      "evidence_url": "https://www.jtcgroup.com/services/funds/real-estate",
+      "summary": "Jersey-headquartered administrator offering real estate fund administration and private client trustee services."
+    },
+    {
+      "name": "Aztec Group",
+      "roles": ["fund_admin"],
+      "options": ["C"],
+      "jurisdiction": "Jersey",
+      "url": "https://aztec.group/",
+      "evidence_url": "https://aztec.group/news/aztec-group-selected-to-administer-luxgrove-uk-real-estate-fund/",
+      "summary": "Fund administrator whose Jersey office administers UK real estate funds, e.g. a Jersey private fund for London residential."
+    },
+    {
+      "name": "Ocorian",
+      "roles": ["fund_admin", "trustee"],
+      "options": ["C", "D"],
+      "jurisdiction": "Jersey",
+      "url": "https://www.ocorian.com/",
+      "evidence_url": "https://www.ocorian.com/funds/real-estate-investment-structuring",
+      "summary": "Administers property unit trusts and real estate funds (Jersey among its centres); also offers private client trustee services."
+    },
+    {
+      "name": "Hawksford",
+      "roles": ["fund_admin", "trustee"],
+      "options": ["C", "D"],
+      "jurisdiction": "Jersey",
+      "url": "https://www.hawksford.com/",
+      "evidence_url": "https://www.hawksford.com/insights-and-guides/jersey-property-unit-trust-jput",
+      "summary": "Jersey corporate and private client services provider that administers property-holding structures and sets up trustee PTCs."
+    },
+    {
+      "name": "Withers",
+      "roles": ["private_client"],
+      "options": ["D"],
+      "jurisdiction": "UK",
+      "url": "https://www.withersworldwide.com/en-gb",
+      "evidence_url": "https://www.withersworldwide.com/en-gb/experience/our-practices/private-client/trusts-foundations-and-stress-testing",
+      "summary": "Private client law firm that establishes trusts and advises on estate planning, trust management and succession."
+    },
+    {
+      "name": "Boodle Hatfield",
+      "roles": ["private_client"],
+      "options": ["D"],
+      "jurisdiction": "UK",
+      "url": "https://www.boodlehatfield.com/",
+      "evidence_url": "https://www.boodlehatfield.com/articles/autumn-budget-2024-private-client-taxation",
+      "summary": "London law firm with a private client and tax team covering trusts, succession planning and inheritance tax."
+    },
+    {
+      "name": "Charles Russell Speechlys",
+      "roles": ["private_client"],
+      "options": ["D"],
+      "jurisdiction": "UK",
+      "url": "https://www.charlesrussellspeechlys.com/",
+      "evidence_url": "https://www.charlesrussellspeechlys.com/en/services/private-client/wills-and-succession-planning-lawyers/",
+      "summary": "UK law firm whose private client team advises on wills, trust structures and succession planning."
+    },
+    {
+      "name": "Payne Hicks Beach",
+      "roles": ["private_client"],
+      "options": ["D"],
+      "jurisdiction": "UK",
+      "url": "https://www.phb.co.uk/",
+      "evidence_url": "https://www.phb.co.uk/service/preserving-your-wealth/",
+      "summary": "London private client law firm advising on trusts, landed estates and UK tax, with a trust compliance team."
+    }
+  ],
+  "registers": [
+    {
+      "name": "SRA Solicitors Register",
+      "roles": ["conveyancer", "corporate", "fund_lawyer", "private_client"],
+      "url": "https://www.sra.org.uk/consumers/register/",
+      "how": "Search a solicitor or firm by name to confirm it is authorised by the Solicitors Regulation Authority in England and Wales."
+    },
+    {
+      "name": "Law Society Find a Solicitor",
+      "roles": ["conveyancer", "corporate", "fund_lawyer", "private_client"],
+      "url": "https://solicitors.lawsociety.org.uk/",
+      "how": "Search by area of law (e.g. residential conveyancing, trusts) and location to shortlist solicitor firms in England and Wales."
+    },
+    {
+      "name": "CLC Find a CLC Lawyer",
+      "roles": ["conveyancer"],
+      "url": "https://www.clc-uk.org/find-a-clc-lawyer/",
+      "how": "Search by individual, practice or postcode to find or verify a licensed conveyancer regulated by the Council for Licensed Conveyancers."
+    },
+    {
+      "name": "CIOT Find a Member (Chartered Tax Advisers)",
+      "roles": ["property_tax", "private_client"],
+      "url": "https://pilot-portal.tax.org.uk/utilities/ciot/find-a-member",
+      "how": "Check that an adviser is a Chartered Tax Adviser listed by the Chartered Institute of Taxation."
+    },
+    {
+      "name": "ATT Find a Member",
+      "roles": ["property_tax", "accountant"],
+      "url": "https://pilot-portal.tax.org.uk/utilities/att/find-a-member",
+      "how": "Check that a tax practitioner is a member of the Association of Taxation Technicians."
+    },
+    {
+      "name": "ICAEW Find a Chartered Accountant",
+      "roles": ["property_tax", "accountant"],
+      "url": "https://www.icaew.com/about-icaew/find-a-chartered-accountant",
+      "how": "Use ICAEW's directory to find or verify ICAEW chartered accountancy firms by location and service."
+    },
+    {
+      "name": "ACCA Find an Accountant",
+      "roles": ["accountant"],
+      "url": "https://www.accaglobal.com/gb/en/member/find-an-accountant.html",
+      "how": "Search ACCA's directory for ACCA-qualified accountancy practices near you and confirm their membership."
+    },
+    {
+      "name": "Companies House: Find and update company information",
+      "roles": ["corporate", "accountant"],
+      "url": "https://find-and-update.company-information.service.gov.uk/",
+      "how": "Look up any UK company, including a formation agent, accountancy firm or your own PropCo, to check its status, officers and filings."
+    },
+    {
+      "name": "GOV.UK: Set up a limited company",
+      "roles": ["corporate"],
+      "url": "https://www.gov.uk/limited-company-formation",
+      "how": "Official step-by-step guidance on incorporating PropCo Ltd, either directly with Companies House or through an agent."
+    },
+    {
+      "name": "Law Society of Jersey Firm Search",
+      "roles": ["fund_lawyer"],
+      "url": "https://www.jerseylawsociety.je/lawyers-and-firms/firm-search",
+      "how": "Search the Jersey Law Society's list of Jersey law firms to confirm a firm practises Jersey law."
+    },
+    {
+      "name": "Jersey Finance Business Directory",
+      "roles": ["fund_lawyer", "fund_admin"],
+      "url": "https://www.jerseyfinance.com/ifc/business-directory/",
+      "how": "Filter by fund administration, trust and company administration or law to shortlist Jersey providers (industry directory, not a regulator)."
+    },
+    {
+      "name": "JFSC Regulated Entities",
+      "roles": ["fund_admin", "trustee"],
+      "url": "https://www.jerseyfsc.org/industry/regulated-entities/",
+      "how": "Search a provider's name, filtering by 'Fund services' or 'Trust company', to confirm it is licensed by the Jersey Financial Services Commission."
+    },
+    {
+      "name": "JFSC Registry entities search",
+      "roles": ["fund_admin"],
+      "url": "https://www.jerseyfsc.org/registry/registry-entities/",
+      "how": "Search the Jersey company registry by name or number to check a Jersey trustee company or fund entity exists and is active."
+    },
+    {
+      "name": "FCA Financial Services Register",
+      "roles": ["fund_admin"],
+      "url": "https://www.fca.org.uk/firms/financial-services-register",
+      "how": "Check that a proposed RIF operator (UK AIFM) or depositary is authorised by the FCA and holds the right permissions."
+    },
+    {
+      "name": "GFSC Fiduciary Regulated Entities",
+      "roles": ["trustee"],
+      "url": "https://www.gfsc.gg/industry-sectors/fiduciary/regulated-entities",
+      "how": "Check that a Guernsey trust company holds a fiduciary licence from the Guernsey Financial Services Commission."
+    },
+    {
+      "name": "HMRC: Register a trust as a trustee",
+      "roles": ["private_client", "trustee"],
+      "url": "https://www.gov.uk/guidance/register-a-trust-as-a-trustee",
+      "how": "Official guidance on whether and when the family trust must register on HMRC's Trust Registration Service."
+    },
+    {
+      "name": "HMRC: Manage your trust's registration",
+      "roles": ["trustee"],
+      "url": "https://www.gov.uk/guidance/manage-your-trusts-registration-service",
+      "how": "Official guidance for trustees or their agent on keeping the Trust Registration Service record up to date and getting proof of registration."
+    }
+  ]
+}

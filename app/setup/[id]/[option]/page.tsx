@@ -154,16 +154,6 @@ function Setup() {
         </section>
 
         <aside className="space-y-8">
-          <section>
-            <h2 className="wide text-[20px] font-bold tracking-tight">Who you need</h2>
-            {DIRECTORY && <p className="mt-1 text-[12px] text-muted">{DIRECTORY.note}</p>}
-            <ul className="mt-4 space-y-4">
-              {roles.map((r) => (
-                <RoleBlock key={r} role={r} option={option} />
-              ))}
-            </ul>
-          </section>
-
           <section className="rounded-md bg-ink p-5 text-sheet">
             <h2 className="text-[15px] font-semibold">Brief for your advisers</h2>
             <p className="mt-1 text-[13px] text-sheet/70">
@@ -184,15 +174,32 @@ function Setup() {
               </a>
             </div>
           </section>
+          <section>
+            <h2 className="wide text-[20px] font-bold tracking-tight">Who you need</h2>
+            {DIRECTORY && <p className="mt-1 text-[12px] text-muted">{DIRECTORY.note}</p>}
+            <ul className="mt-4 space-y-4">
+              {roles.map((r) => (
+                <RoleBlock key={r} role={r} option={option} fundJurisdiction={structure?.nodes.find((n) => n.kind === "fund")?.jurisdiction} />
+              ))}
+            </ul>
+          </section>
+
         </aside>
       </div>
     </div>
   );
 }
 
-function RoleBlock({ role, option }: { role: RoleId; option: OptionId }) {
+const FUND_ROLES: RoleId[] = ["fund_lawyer", "fund_admin"];
+
+function RoleBlock({ role, option, fundJurisdiction }: { role: RoleId; option: OptionId; fundJurisdiction?: string }) {
+  const [all, setAll] = useState(false);
   const info = DIRECTORY?.roles[role];
-  const firms = DIRECTORY?.firms.filter((f) => f.roles.includes(role) && f.options.includes(option)) ?? [];
+  const matching =
+    DIRECTORY?.firms.filter(
+      (f) => f.roles.includes(role) && f.options.includes(option) && (!FUND_ROLES.includes(role) || !fundJurisdiction || f.jurisdiction === fundJurisdiction),
+    ) ?? [];
+  const firms = all ? matching : matching.slice(0, 3);
   const registers = DIRECTORY?.registers.filter((r) => r.roles.includes(role)) ?? [];
   return (
     <li id={`role-${role}`} className="scroll-mt-6 rounded-md border border-rule bg-sheet p-4">
@@ -211,6 +218,13 @@ function RoleBlock({ role, option }: { role: RoleId; option: OptionId }) {
               <p className="mt-0.5 text-[12px] leading-snug text-ink-soft">{f.summary}</p>
             </li>
           ))}
+          {matching.length > 3 && (
+            <li className="pt-2">
+              <button onClick={() => setAll((v) => !v)} className="text-[12px] font-semibold underline decoration-rule underline-offset-2 hover:decoration-ink">
+                {all ? "Show fewer" : `Show ${matching.length - 3} more`}
+              </button>
+            </li>
+          )}
         </ul>
       )}
       {registers.length > 0 && (
